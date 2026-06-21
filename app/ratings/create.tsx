@@ -37,7 +37,7 @@ export default function CreateRatingScreen() {
   }, []);
 
   // Form State
-  const [idTarget, setIdTarget] = useState("");
+  const [targetId, setTargetId] = useState("");
   const [ratingNote, setRatingNote] = useState<number>(0);
   const [review, setReview] = useState("");
   const [whoCanSee, setWhoCanSee] = useState<"PUBLIC" | "JUST_FOLLOWERS" | "PRIVATE">("PUBLIC");
@@ -48,9 +48,8 @@ export default function CreateRatingScreen() {
   
   // Validation / Error States
   const [validationErrors, setValidationErrors] = useState<{
-    idTarget?: string;
+    targetId?: string;
     ratingNote?: string;
-    review?: string;
   }>({});
   const [apiErrors, setApiErrors] = useState<string[]>([]);
   const [apiErrorMessage, setApiErrorMessage] = useState<string | null>(null);
@@ -59,8 +58,8 @@ export default function CreateRatingScreen() {
     const errors: typeof validationErrors = {};
     let isValid = true;
 
-    if (!idTarget.trim()) {
-      errors.idTarget = "O ID da mídia é obrigatório.";
+    if (!targetId.trim()) {
+      errors.targetId = "O ID da mídia é obrigatório.";
       isValid = false;
     }
 
@@ -69,11 +68,6 @@ export default function CreateRatingScreen() {
       isValid = false;
     } else if (ratingNote % 0.5 !== 0) {
       errors.ratingNote = "A nota deve ser em incrementos de 0.5.";
-      isValid = false;
-    }
-
-    if (!review.trim()) {
-      errors.review = "A avaliação em texto é obrigatória.";
       isValid = false;
     }
 
@@ -91,11 +85,14 @@ export default function CreateRatingScreen() {
     }
 
     const dto: RatingRequestDto = {
-      idTarget: idTarget.trim(),
+      targetId: targetId.trim(),
       ratingNote,
-      review: review.trim(),
       whoCanSee,
     };
+
+    if (review.trim()) {
+      dto.review = review.trim();
+    }
 
     setSubmitting(true);
 
@@ -186,7 +183,7 @@ export default function CreateRatingScreen() {
         >
           <View style={[styles.card, { backgroundColor: themeStyles.cardBackground }]}>
             
-            {/* Input idTarget */}
+            {/* Input targetId */}
             <View style={styles.fieldContainer}>
               <Text style={[styles.label, { color: themeStyles.textColor }]}>
                 ID da Mídia <Text style={styles.requiredStar}>*</Text>
@@ -199,23 +196,23 @@ export default function CreateRatingScreen() {
                   styles.input,
                   {
                     backgroundColor: themeStyles.inputBg,
-                    borderColor: validationErrors.idTarget ? "#EF4444" : themeStyles.inputBorder,
+                    borderColor: validationErrors.targetId ? "#EF4444" : themeStyles.inputBorder,
                     color: themeStyles.textColor,
                   },
                 ]}
                 placeholder="Ex: movie_12345"
                 placeholderTextColor={isDark ? "#525860" : "#A0A5B0"}
-                value={idTarget}
+                value={targetId}
                 onChangeText={(text) => {
-                  setIdTarget(text);
-                  if (text.trim() && validationErrors.idTarget) {
-                    setValidationErrors((prev) => ({ ...prev, idTarget: undefined }));
+                  setTargetId(text);
+                  if (text.trim() && validationErrors.targetId) {
+                    setValidationErrors((prev) => ({ ...prev, targetId: undefined }));
                   }
                 }}
                 editable={!submitting}
               />
-              {validationErrors.idTarget && (
-                <Text style={styles.errorText}>{validationErrors.idTarget}</Text>
+              {validationErrors.targetId && (
+                <Text style={styles.errorText}>{validationErrors.targetId}</Text>
               )}
             </View>
 
@@ -255,7 +252,7 @@ export default function CreateRatingScreen() {
             {/* Input review */}
             <View style={styles.fieldContainer}>
               <Text style={[styles.label, { color: themeStyles.textColor }]}>
-                Sua Opinião <Text style={styles.requiredStar}>*</Text>
+                Sua Opinião <Text style={[styles.disclaimerText, { color: themeStyles.subText }]}>- Opcional</Text>
               </Text>
               <TextInput
                 style={[
@@ -263,27 +260,19 @@ export default function CreateRatingScreen() {
                   styles.multilineInput,
                   {
                     backgroundColor: themeStyles.inputBg,
-                    borderColor: validationErrors.review ? "#EF4444" : themeStyles.inputBorder,
+                    borderColor: themeStyles.inputBorder,
                     color: themeStyles.textColor,
                   },
                 ]}
-                placeholder="Escreva detalhes da sua avaliação sobre esta mídia..."
+                placeholder="Escreva detalhes da sua avaliação sobre esta mídia (opcional)..."
                 placeholderTextColor={isDark ? "#525860" : "#A0A5B0"}
                 multiline
                 numberOfLines={6}
                 textAlignVertical="top"
                 value={review}
-                onChangeText={(text) => {
-                  setReview(text);
-                  if (text.trim() && validationErrors.review) {
-                    setValidationErrors((prev) => ({ ...prev, review: undefined }));
-                  }
-                }}
+                onChangeText={setReview}
                 editable={!submitting}
               />
-              {validationErrors.review && (
-                <Text style={styles.errorText}>{validationErrors.review}</Text>
-              )}
             </View>
 
             {/* Input whoCanSee */}

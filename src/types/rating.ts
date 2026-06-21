@@ -1,6 +1,6 @@
 export interface RatingRequestDto {
-  idTarget: string;
+  targetId: string;
   ratingNote: number;
-  review: string;
+  review?: string;
   whoCanSee: "PUBLIC" | "JUST_FOLLOWERS" | "PRIVATE";
 }

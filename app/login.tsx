@@ -15,7 +15,7 @@ export default function Login() {
   useEffect(() => {
     const handleLogin = async () => {
       if (response?.type === "success") {
-        const { id_token } = response.authentication;
+        const { id_token } = response.authentication as any;
 
         const credential = GoogleAuthProvider.credential(id_token);
 

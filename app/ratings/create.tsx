@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -9,7 +9,6 @@ import {
   Platform,
   ActivityIndicator,
   Pressable,
-  Alert,
   SafeAreaView,
 } from "react-native";
 import { Stack, router } from "expo-router";
@@ -17,17 +16,25 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import apiClient, { NormalizedError } from "@/src/service/apiClient";
 import { StarRating } from "@/src/components/StarRating";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-
-export interface RatingRequestDto {
-  idTarget: string;
-  ratingNote: number;
-  review: string;
-  whoCanSee: "PUBLIC" | "JUST_FOLLOWERS" | "PRIVATE";
-}
+import { RatingRequestDto } from "@/src/types/rating";
 
 export default function CreateRatingScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
+
+  // Mounting and timer tracking to avoid memory leaks/setting state on unmounted component
+  const isMountedRef = useRef(true);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   // Form State
   const [idTarget, setIdTarget] = useState("");
@@ -96,30 +103,31 @@ export default function CreateRatingScreen() {
       await apiClient.post("/api/ratings", dto);
       
       // Success: Show beautiful confirmation and navigate back
-      setShowSuccessToast(true);
-      setTimeout(() => {
-        setShowSuccessToast(false);
+      if (isMountedRef.current) {
+        setShowSuccessToast(true);
+      }
+      
+      timeoutRef.current = setTimeout(() => {
+        if (isMountedRef.current) {
+          setShowSuccessToast(false);
+        }
         router.back();
       }, 1500);
     } catch (err) {
       // Capture normalized error
       const normErr = err as NormalizedError;
       
-      if (normErr.errors && normErr.errors.length > 0) {
-        setApiErrors(normErr.errors);
-      } else {
-        setApiErrorMessage(normErr.message || "Erro inesperado ao salvar sua avaliação.");
+      if (isMountedRef.current) {
+        if (normErr.errors && normErr.errors.length > 0) {
+          setApiErrors(normErr.errors);
+        } else {
+          setApiErrorMessage(normErr.message || "Erro inesperado ao salvar sua avaliação.");
+        }
       }
-
-      // Show alert fallback for visibility
-      Alert.alert(
-        "Erro ao salvar",
-        normErr.errors && normErr.errors.length > 0 
-          ? normErr.errors.join("\n") 
-          : normErr.message || "Erro inesperado ao salvar sua avaliação."
-      );
     } finally {
-      setSubmitting(false);
+      if (isMountedRef.current) {
+        setSubmitting(false);
+      }
     }
   };
 
@@ -235,6 +243,8 @@ export default function CreateRatingScreen() {
                   }}
                   disabled={submitting}
                   size={36}
+                  filledColor={themeStyles.tintColor}
+                  emptyColor={themeStyles.subText}
                 />
               </View>
               {validationErrors.ratingNote && (

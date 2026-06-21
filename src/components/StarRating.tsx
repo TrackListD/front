@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef } from "react";
 import { View, Pressable, StyleSheet, GestureResponderEvent } from "react-native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
@@ -7,6 +7,8 @@ interface StarRatingProps {
   onChange?: (rating: number) => void;
   size?: number;
   disabled?: boolean;
+  filledColor?: string;
+  emptyColor?: string;
 }
 
 export function StarRating({
@@ -14,15 +16,21 @@ export function StarRating({
   onChange,
   size = 40,
   disabled = false,
+  filledColor = "#FFC107",
+  emptyColor = "#9BA1A6",
 }: StarRatingProps) {
   const stars = [1, 2, 3, 4, 5];
+  const widthsRef = useRef<number[]>([]);
 
   const handlePress = (index: number, event: GestureResponderEvent) => {
     if (disabled || !onChange) return;
     const { locationX } = event.nativeEvent;
+    
+    // Get actual layout width of this specific star Pressable, falling back to size
+    const actualWidth = widthsRef.current[index] || size;
+    
     // Calculate if touch is on the left half or right half of the star
-    // locationX is relative to the Pressable element
-    const isLeftHalf = locationX < size / 2;
+    const isLeftHalf = locationX < actualWidth / 2;
     const newRating = index + (isLeftHalf ? 0.5 : 1.0);
     onChange(newRating);
   };
@@ -44,6 +52,12 @@ export function StarRating({
           <Pressable
             key={idx}
             disabled={disabled}
+            onLayout={(event) => {
+              const { width } = event.nativeEvent.layout;
+              if (width > 0) {
+                widthsRef.current[idx] = width;
+              }
+            }}
             onPress={(event) => handlePress(idx, event)}
             style={({ pressed }) => [
               styles.starPressable,
@@ -55,7 +69,7 @@ export function StarRating({
               <MaterialIcons
                 name={iconName}
                 size={size}
-                color={iconName === "star-border" ? "#9BA1A6" : "#FFC107"}
+                color={iconName === "star-border" ? emptyColor : filledColor}
               />
             </View>
           </Pressable>
@@ -76,3 +90,4 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 });
+

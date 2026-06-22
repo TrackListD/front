@@ -4,3 +4,34 @@ export interface RatingRequestDto {
   review?: string;
   whoCanSee: "PUBLIC" | "JUST_FOLLOWERS" | "PRIVATE";
 }
+
+// Versão pública: retornada quando outro usuário visualiza a avaliação
+export interface RatingResponseDto {
+  authorId: number;
+  targetId: string;
+  publicationDate: string;
+  ratingNote: number;
+  review: string;
+  authorName: string;
+  targetName: string;
+  likeCount: number;
+  commentCount: number;
+}
+
+// Versão do dono: retornada quando o próprio autor visualiza a avaliação
+// Contém todos os dados públicos (dentro de publicDto) + campos exclusivos do dono
+export interface RatingOwnerResponseDto {
+  publicDto: RatingResponseDto;
+  updatedAt: string;
+  status: "ACTIVE" | "SUSPENDED" | "BANNED" | "HIDDEN";
+  whoCanSee: "PUBLIC" | "JUST_FOLLOWERS" | "PRIVATE";
+}
+
+// União discriminada: a presença de "publicDto" identifica a versão do dono
+export type RatingDetailResponse = RatingResponseDto | RatingOwnerResponseDto;
+
+// Type guard: retorna true se a resposta for do dono (tem publicDto)
+export function isOwnerResponse(r: RatingDetailResponse): r is RatingOwnerResponseDto {
+  return "publicDto" in r;
+}
+

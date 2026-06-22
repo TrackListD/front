@@ -1,0 +1,327 @@
+// Tela: Lista de Avaliações por Usuário — exibe todas as avaliações públicas de um usuário específico.
+
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  FlatList,
+  ActivityIndicator,
+  Pressable,
+  SafeAreaView,
+} from "react-native";
+import { Stack, useLocalSearchParams, router, Href } from "expo-router";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import apiClient, { NormalizedError } from "@/src/service/apiClient";
+import { StarRating } from "@/src/components/StarRating";
+import { RatingResponseDto } from "@/src/types/rating";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+
+export default function UserRatingsScreen() {
+  const { userId } = useLocalSearchParams<{ userId: string }>();
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
+
+  // Form search input state
+  const [searchInput, setSearchInput] = useState(userId || "");
+
+  // Fetch states
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<NormalizedError | null>(null);
+  const [ratings, setRatings] = useState<RatingResponseDto[]>([]);
+
+  const fetchRatings = async (targetUserId: string) => {
+    if (!targetUserId) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await apiClient.get<RatingResponseDto[]>("/api/ratings/user/" + targetUserId);
+      setRatings(response.data);
+    } catch (err) {
+      setError(err as NormalizedError);
+      setRatings([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (userId) {
+      fetchRatings(userId);
+      setSearchInput(userId);
+    }
+  }, [userId]);
+
+  const handleSearch = () => {
+    const trimmed = searchInput.trim();
+    if (!trimmed) return;
+    router.replace((`/ratings/user/${trimmed}`) as Href);
+  };
+
+  const themeStyles = {
+    background: isDark ? "#121214" : "#F8F9FA",
+    cardBackground: isDark ? "#1D1F22" : "#FFFFFF",
+    textColor: isDark ? "#ECEDEE" : "#11181C",
+    subText: isDark ? "#9BA1A6" : "#687076",
+    border: isDark ? "#2C2F33" : "#E4E7EB",
+    inputBg: isDark ? "#151719" : "#F1F3F5",
+    tintColor: isDark ? "#38BDF8" : "#0A7EA4",
+    starColor: "#FFC107",
+  };
+
+  const formatDate = (dateStr: string) => {
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+    } catch {
+      return dateStr;
+    }
+  };
+
+  return (
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: themeStyles.background }]}>
+      <Stack.Screen
+        options={{
+          title: "Avaliações do Usuário",
+          headerStyle: {
+            backgroundColor: themeStyles.cardBackground,
+          },
+          headerTintColor: themeStyles.textColor,
+          headerShadowVisible: false,
+        }}
+      />
+
+      <View style={styles.container}>
+        
+        {/* TEMPORÁRIO: campo manual de userId para testes.
+            Substituir pela chamada GET /api/users/me quando o endpoint for implementado,
+            para obter automaticamente o id numérico interno do usuário logado. */}
+        <View style={[styles.searchCard, { backgroundColor: themeStyles.cardBackground, borderColor: themeStyles.border }]}>
+          <Text style={[styles.searchLabel, { color: themeStyles.textColor }]}>
+            Buscar outro UserId (Teste)
+          </Text>
+          <View style={styles.searchRow}>
+            <TextInput
+              style={[
+                styles.searchInput,
+                {
+                  backgroundColor: themeStyles.inputBg,
+                  borderColor: themeStyles.border,
+                  color: themeStyles.textColor,
+                },
+              ]}
+              placeholder="Digite o ID numérico"
+              placeholderTextColor={isDark ? "#525860" : "#A0A5B0"}
+              keyboardType="numeric"
+              value={searchInput}
+              onChangeText={setSearchInput}
+            />
+            <Pressable
+              onPress={handleSearch}
+              style={({ pressed }) => [
+                styles.searchButton,
+                { backgroundColor: themeStyles.tintColor },
+                pressed && { opacity: 0.8 },
+              ]}
+            >
+              <Text style={styles.searchButtonText}>Buscar</Text>
+            </Pressable>
+          </View>
+        </View>
+
+        {/* Loading Indicator */}
+        {loading && (
+          <View style={styles.centerContainer}>
+            <ActivityIndicator size="large" color={themeStyles.tintColor} />
+          </View>
+        )}
+
+        {/* Error State */}
+        {!loading && error && (
+          <View style={styles.centerContainer}>
+            <Text style={[styles.errorText, { color: "#EF4444" }]}>{error.message}</Text>
+          </View>
+        )}
+
+        {/* Empty List State */}
+        {!loading && !error && ratings.length === 0 && (
+          <View style={styles.centerContainer}>
+            <MaterialIcons name="rate-review" size={48} color={themeStyles.subText} />
+            <Text style={[styles.emptyText, { color: themeStyles.subText }]}>
+              Nenhuma avaliação encontrada
+            </Text>
+          </View>
+        )}
+
+        {/* Success List */}
+        {!loading && !error && ratings.length > 0 && (
+          <FlatList
+            data={ratings}
+            keyExtractor={(item) => String(item.id)}
+            contentContainerStyle={styles.listContent}
+            renderItem={({ item }) => (
+              <Pressable
+                onPress={() => router.push((`/ratings/${item.id}`) as Href)}
+                style={({ pressed }) => [
+                  styles.ratingCard,
+                  {
+                    backgroundColor: themeStyles.cardBackground,
+                    borderColor: themeStyles.border,
+                  },
+                  pressed && { opacity: 0.9 },
+                ]}
+              >
+                <View style={styles.cardHeader}>
+                  <View style={styles.cardHeaderLeft}>
+                    <Text style={[styles.targetName, { color: themeStyles.textColor }]} numberOfLines={1}>
+                      {item.targetName}
+                    </Text>
+                    <Text style={[styles.dateText, { color: themeStyles.subText }]}>
+                      {formatDate(item.publicationDate)}
+                    </Text>
+                  </View>
+                  <MaterialIcons name="chevron-right" size={24} color={themeStyles.subText} />
+                </View>
+
+                <View style={styles.ratingRow}>
+                  <StarRating
+                    rating={item.ratingNote}
+                    size={18}
+                    disabled={true}
+                    filledColor={themeStyles.starColor}
+                    emptyColor={themeStyles.subText}
+                  />
+                  <Text style={[styles.ratingNoteText, { color: themeStyles.textColor }]}>
+                    {item.ratingNote.toFixed(1)}
+                  </Text>
+                </View>
+
+                {item.review ? (
+                  <Text style={[styles.reviewSnippet, { color: themeStyles.textColor }]} numberOfLines={2}>
+                    {item.review}
+                  </Text>
+                ) : (
+                  <Text style={[styles.reviewSnippet, styles.noReviewText, { color: themeStyles.subText }]}>
+                    Sem opinião escrita.
+                  </Text>
+                )}
+              </Pressable>
+            )}
+          />
+        )}
+      </View>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
+  container: {
+    flex: 1,
+    padding: 16,
+    gap: 16,
+  },
+  searchCard: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 12,
+    gap: 8,
+  },
+  searchLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  searchRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    height: 40,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    fontSize: 14,
+  },
+  searchButton: {
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  searchButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 40,
+    gap: 8,
+  },
+  listContent: {
+    gap: 12,
+    paddingBottom: 24,
+  },
+  ratingCard: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 16,
+    gap: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+  },
+  cardHeaderLeft: {
+    flex: 1,
+    gap: 2,
+  },
+  targetName: {
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  dateText: {
+    fontSize: 12,
+  },
+  ratingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  ratingNoteText: {
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  reviewSnippet: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  noReviewText: {
+    fontStyle: "italic",
+  },
+  emptyText: {
+    fontSize: 15,
+    fontWeight: "500",
+  },
+  errorText: {
+    fontSize: 14,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+});

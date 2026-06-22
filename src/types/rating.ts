@@ -7,6 +7,7 @@ export interface RatingRequestDto {
 
 // Versão pública: retornada quando outro usuário visualiza a avaliação
 export interface RatingResponseDto {
+  id: number;
   authorId: number;
   targetId: string;
   publicationDate: string;

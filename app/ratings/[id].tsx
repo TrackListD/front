@@ -1,3 +1,5 @@
+// Tela: Detalhe de Avaliação — exibe os dados completos de uma avaliação, com variação para dono e público.
+
 import React, { useState, useEffect } from "react";
 import {
   View,

@@ -1,3 +1,5 @@
+// Tela: Home — tela inicial temporária com botões de teste de navegação.
+
 import { View, Text, Button } from "react-native";
 import { auth } from "../src/service/firebase";
 import { signOut } from "firebase/auth";
@@ -21,6 +23,12 @@ export default function Home() {
       <Button
         title="Ver Avaliação de Teste"
         onPress={() => router.push("/ratings/1" as Href)}
+      />
+
+      {/* TEMPORÁRIO: substituir pelo userId real do usuário logado via GET /api/users/me. */}
+      <Button
+        title="Ver Lista de Avaliações (Teste)"
+        onPress={() => router.push("/ratings/user/1" as Href)}
       />
 
       <Button

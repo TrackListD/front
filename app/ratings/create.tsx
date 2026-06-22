@@ -1,3 +1,5 @@
+// Tela: Criar Avaliação — formulário para criação de uma nova avaliação musical.
+
 import React, { useState, useEffect, useRef } from "react";
 import {
   View,

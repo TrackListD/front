@@ -1,15 +1,11 @@
 import React from "react";
-import { SafeAreaView, StatusBar, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView, StatusBar, StyleSheet } from "react-native";
 import FeedList from "../../src/components/FeedList";
 
 export default function GlobalFeedScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#12161A" />
-
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Global</Text>
-      </View>
 
       <FeedList
         endpoint="/feed/global"

@@ -1,10 +1,11 @@
-import { AntDesign, FontAwesome } from "@expo/vector-icons"; // Importando os ícones do Expo
+import { AntDesign } from "@expo/vector-icons"; // Importando os ícones do Expo
 import * as Google from "expo-auth-session/providers/google";
 import { Link, useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import { GoogleAuthProvider, signInWithCredential } from "firebase/auth";
 import React, { useEffect } from "react";
 import {
+  Image,
   StatusBar,
   StyleSheet,
   Text,
@@ -14,7 +15,7 @@ import {
 import { auth } from "../src/service/firebase";
 
 WebBrowser.maybeCompleteAuthSession();
-
+const logoImg = require("../assets/images/logo_no_bg.png");
 export default function Login() {
   const router = useRouter();
   const [request, response, promptAsync] = Google.useAuthRequest({
@@ -53,16 +54,13 @@ export default function Login() {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0b1716" />
 
-      {/* --- ÁREA DO LOGO --- */}
       <View style={styles.logoContainer}>
         <View style={styles.iconCircle}>
-          {/* Substitua pelo seu ícone/imagem de rádio se preferir */}
-          <FontAwesome name="drivers-license-o" size={40} color="#fff" />
+          <Image source={logoImg} style={styles.logoImage} />
         </View>
         <Text style={styles.title}>TrackListD</Text>
         <Text style={styles.subtitle}>A sua rede social para música</Text>
       </View>
-
       {/* --- ÁREA DOS BOTÕES --- */}
       <View style={styles.buttonContainer}>
         {/* Card Informativo Superior */}
@@ -179,6 +177,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
+  },
+  logoImage: {
+    width: 60,
+    height: 60,
+    resizeMode: "contain",
   },
   googleIcon: {
     marginRight: 12,

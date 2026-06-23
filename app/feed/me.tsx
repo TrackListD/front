@@ -30,10 +30,6 @@ export default function MyFeedScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#12161A" />
 
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Para Você</Text>
-      </View>
-
       {!checkingAuth && !user ? (
         <View style={styles.loggedOutContainer}>
           <Text style={styles.loggedOutTitle}>Entre para ver seu feed</Text>

@@ -39,3 +39,25 @@ export async function authFetch(path: string, options: RequestInit = {}) {
     headers,
   });
 }
+
+export type LikeResponse = {
+  liked: boolean;
+  likesCount: number;
+};
+
+/**
+ * Alterna o like (like/unlike) de uma publicação. Requer usuário autenticado;
+ * o caller deve garantir isso antes de chamar (authFetch não bloqueia
+ * chamadas sem token, ela só não envia o header se não houver usuário).
+ */
+export async function toggleLike(publicationId: number): Promise<LikeResponse> {
+  const response = await authFetch(`/publications/${publicationId}/like`, {
+    method: "POST",
+  });
+
+  if (!response.ok) {
+    throw new Error(`Falha ao curtir publicação: ${response.status}`);
+  }
+
+  return response.json();
+}

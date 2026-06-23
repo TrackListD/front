@@ -1,17 +1,19 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    Image,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { FeedItem } from "../../types/feed";
-import { authFetch } from "../service/api";
+import { authFetch, toggleLike } from "../service/api";
+import { auth } from "../service/firebase";
 
 type FeedListProps = {
   /** Caminho relativo do endpoint, ex: "/feed/global" ou "/feed/me" */
@@ -24,6 +26,7 @@ export default function FeedList({
   endpoint,
   emptyMessage = "Nenhum post encontrado no momento.",
 }: FeedListProps) {
+  const router = useRouter();
   const [posts, setPosts] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
@@ -63,6 +66,70 @@ export default function FeedList({
     setRefreshing(true);
     fetchFeed(false);
   };
+
+  const handleToggleLike = useCallback(
+    async (postId: number) => {
+      if (!auth.currentUser) {
+        router.push("/login");
+        return;
+      }
+
+      // Atualização otimista: muda a UI imediatamente, antes da resposta do servidor
+      setPosts((currentPosts) =>
+        currentPosts.map((post) =>
+          post.id === postId
+            ? {
+                ...post,
+                likedByMe: !post.likedByMe,
+                likesCount: post.likedByMe
+                  ? post.likesCount - 1
+                  : post.likesCount + 1,
+              }
+            : post,
+        ),
+      );
+
+      try {
+        const result = await toggleLike(postId);
+
+        // Sincroniza com o valor real retornado pelo servidor
+        setPosts((currentPosts) =>
+          currentPosts.map((post) =>
+            post.id === postId
+              ? {
+                  ...post,
+                  likedByMe: result.liked,
+                  likesCount: result.likesCount,
+                }
+              : post,
+          ),
+        );
+      } catch (error) {
+        console.error("Erro ao curtir publicação:", postId, error);
+
+        // Rollback: desfaz a mudança otimista, já que a requisição falhou
+        setPosts((currentPosts) =>
+          currentPosts.map((post) =>
+            post.id === postId
+              ? {
+                  ...post,
+                  likedByMe: !post.likedByMe,
+                  likesCount: post.likedByMe
+                    ? post.likesCount - 1
+                    : post.likesCount + 1,
+                }
+              : post,
+          ),
+        );
+
+        Alert.alert(
+          "Erro",
+          "Não foi possível registrar sua curtida. Tente novamente.",
+        );
+      }
+    },
+    [router],
+  );
 
   const formatTimeAgo = (dateString: string) => {
     try {
@@ -149,7 +216,10 @@ export default function FeedList({
 
         {/* Barra de Interações baseada nos dados da API */}
         <View style={styles.interactionsContainer}>
-          <TouchableOpacity style={styles.actionButton}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => handleToggleLike(item.id)}
+          >
             <Ionicons
               name={item.likedByMe ? "heart" : "heart-outline"}
               size={20}

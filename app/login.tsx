@@ -1,6 +1,6 @@
 import { AntDesign, FontAwesome } from "@expo/vector-icons"; // Importando os ícones do Expo
 import * as Google from "expo-auth-session/providers/google";
-import { Link } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import { GoogleAuthProvider, signInWithCredential } from "firebase/auth";
 import React, { useEffect } from "react";
@@ -16,22 +16,37 @@ import { auth } from "../src/service/firebase";
 WebBrowser.maybeCompleteAuthSession();
 
 export default function Login() {
+  const router = useRouter();
   const [request, response, promptAsync] = Google.useAuthRequest({
     webClientId: process.env.EXPO_PUBLIC_WEB_CLIENT_ID,
+    responseType: "id_token",
   });
 
   useEffect(() => {
     const handleLogin = async () => {
       if (response?.type === "success") {
-        const { id_token } = response.authentication;
-        const credential = GoogleAuthProvider.credential(id_token);
+        const idToken =
+          response.params?.id_token ?? response.authentication?.idToken;
+
+        if (!idToken) {
+          console.error(
+            "ID token não encontrado na resposta do Google:",
+            response,
+          );
+          return;
+        }
+
+        const credential = GoogleAuthProvider.credential(idToken);
         await signInWithCredential(auth, credential);
         console.log("Usuário logado:", auth.currentUser);
+        router.replace("/feed/me");
+      } else if (response?.type === "error") {
+        console.error("Erro na autenticação com Google:", response.error);
       }
     };
 
     handleLogin();
-  }, [response]);
+  }, [response, router]);
 
   return (
     <View style={styles.container}>

@@ -1,3 +1,4 @@
+// Tipos e DTOs de Avaliação (Ratings) — define a estrutura de dados de avaliação do frontend e payloads de requisição
 export interface RatingRequestDto {
   targetId: string;
   ratingNote: number;

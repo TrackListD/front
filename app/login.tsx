@@ -1,5 +1,6 @@
 import { AntDesign, FontAwesome } from "@expo/vector-icons"; // Importando os ícones do Expo
 import * as Google from "expo-auth-session/providers/google";
+import { Link } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import { GoogleAuthProvider, signInWithCredential } from "firebase/auth";
 import React, { useEffect } from "react";
@@ -8,7 +9,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import { auth } from "../src/service/firebase";
 
@@ -74,9 +75,11 @@ export default function Login() {
         </TouchableOpacity>
 
         {/* Botão Explorar sem conta */}
-        <TouchableOpacity style={styles.exploreButton}>
-          <Text style={styles.exploreButtonText}>Explorar sem conta</Text>
-        </TouchableOpacity>
+        <Link href="/feed/global" asChild>
+          <TouchableOpacity style={styles.exploreButton}>
+            <Text style={styles.exploreButtonText}>Explorar sem conta</Text>
+          </TouchableOpacity>
+        </Link>
       </View>
     </View>
   );

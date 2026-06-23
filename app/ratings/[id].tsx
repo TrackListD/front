@@ -20,6 +20,9 @@ import {
   isOwnerResponse,
 } from "@/src/types/rating";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import EditReviewModal from "@/src/components/EditReviewModal";
+import EditNoteModal from "@/src/components/EditNoteModal";
+import EditPrivacyModal from "@/src/components/EditPrivacyModal";
 
 export default function RatingDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -30,6 +33,11 @@ export default function RatingDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<NormalizedError | null>(null);
   const [rating, setRating] = useState<RatingDetailResponse | null>(null);
+
+  // Estados para controle de visibilidade dos modais de edição
+  const [showEditReview, setShowEditReview] = useState(false);
+  const [showEditNote, setShowEditNote] = useState(false);
+  const [showEditPrivacy, setShowEditPrivacy] = useState(false);
 
   useEffect(() => {
     const fetchRatingDetail = async () => {
@@ -247,10 +255,7 @@ export default function RatingDetailScreen() {
               {isOwner && (
                 <Pressable
                   style={({ pressed }) => [styles.editIcon, pressed && styles.pressed]}
-                  onPress={() => {
-                    // FUTURA INTEGRAÇÃO: Chamar PATCH /api/ratings/{id}/note aqui
-                    // para permitir que o usuário altere a nota da avaliação diretamente.
-                  }}
+                  onPress={() => setShowEditNote(true)}
                 >
                   <MaterialIcons name="edit" size={18} color={themeStyles.tintColor} />
                 </Pressable>
@@ -267,10 +272,7 @@ export default function RatingDetailScreen() {
               {isOwner && (
                 <Pressable
                   style={({ pressed }) => [styles.editIcon, pressed && styles.pressed]}
-                  onPress={() => {
-                    // FUTURA INTEGRAÇÃO: Chamar PATCH /api/ratings/{id}/review aqui
-                    // para permitir que o usuário altere o texto da avaliação diretamente.
-                  }}
+                  onPress={() => setShowEditReview(true)}
                 >
                   <MaterialIcons name="edit" size={18} color={themeStyles.tintColor} />
                 </Pressable>
@@ -310,10 +312,7 @@ export default function RatingDetailScreen() {
 
                 <Pressable
                   style={({ pressed }) => [styles.editIcon, pressed && styles.pressed]}
-                  onPress={() => {
-                    // FUTURA INTEGRAÇÃO: Chamar PATCH /api/ratings/{id}/privacy aqui
-                    // para permitir que o usuário altere as configurações de privacidade da avaliação.
-                  }}
+                  onPress={() => setShowEditPrivacy(true)}
                 >
                   <MaterialIcons name="edit" size={18} color={themeStyles.tintColor} />
                 </Pressable>
@@ -356,6 +355,32 @@ export default function RatingDetailScreen() {
         </View>
 
       </ScrollView>
+
+      {isOwner && (
+        <>
+          <EditReviewModal
+            visible={showEditReview}
+            onClose={() => setShowEditReview(false)}
+            currentReview={publicData.review || ""}
+            ratingId={Number(id)}
+            onSuccess={setRating}
+          />
+          <EditNoteModal
+            visible={showEditNote}
+            onClose={() => setShowEditNote(false)}
+            currentNote={publicData.ratingNote}
+            ratingId={Number(id)}
+            onSuccess={setRating}
+          />
+          <EditPrivacyModal
+            visible={showEditPrivacy}
+            onClose={() => setShowEditPrivacy(false)}
+            currentPrivacy={rating.whoCanSee}
+            ratingId={Number(id)}
+            onSuccess={setRating}
+          />
+        </>
+      )}
     </SafeAreaView>
   );
 }

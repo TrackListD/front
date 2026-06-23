@@ -36,3 +36,20 @@ export function isOwnerResponse(r: RatingDetailResponse): r is RatingOwnerRespon
   return "publicDto" in r;
 }
 
+// DTO para requisição de edição do texto da avaliação
+export interface EditReviewRequestDto {
+  newReview: string;
+}
+
+// DTO para requisição de edição da nota da avaliação
+export interface EditNoteRequestDto {
+  newRatingNote: number;
+}
+
+// DTO para requisição de alteração de privacidade da avaliação
+export interface EditPrivacyRequestDto {
+  newPrivacy: "PUBLIC" | "JUST_FOLLOWERS" | "PRIVATE";
+}
+
+
+

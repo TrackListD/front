@@ -101,6 +101,34 @@ export default function MediaListDetailScreen() {
     }
   };
 
+  const handleDeleteList = () => {
+    Alert.alert(
+      "Excluir Lista",
+      "Tem certeza que deseja excluir esta lista permanentemente? Esta ação não pode ser desfeita.",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Excluir",
+          style: "destructive",
+          onPress: async () => {
+            setLoading(true);
+            try {
+              await apiClient.delete(`/api/mediaList/${id}`);
+              // TEMPORÁRIO: Redireciona para a Home. Futuramente, redirecionar para a tela de 'Minhas Listas' (GET /api/mediaList/user/{userId}).
+              router.replace("/" as Href);
+            } catch (err) {
+              const normalized = err as NormalizedError;
+              Alert.alert("Erro", normalized.message || "Não foi possível excluir a lista.");
+            } finally {
+              setLoading(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+
   if (loading) {
     return (
       <SafeAreaView style={[styles.safeArea, { backgroundColor: themeStyles.background }]}>
@@ -159,6 +187,7 @@ export default function MediaListDetailScreen() {
                   Alert.alert("Opções da Lista", "O que deseja fazer?", [
                     { text: "Editar Nome", onPress: () => setNameModalVisible(true) },
                     { text: "Editar Privacidade", onPress: () => setPrivacyModalVisible(true) },
+                    { text: "Excluir Lista", style: "destructive", onPress: handleDeleteList },
                     { text: "Cancelar", style: "cancel" },
                   ])
                 }

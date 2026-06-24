@@ -10,7 +10,7 @@ import {
   Pressable,
   SafeAreaView,
 } from "react-native";
-import { Stack, useLocalSearchParams } from "expo-router";
+import { Stack, useLocalSearchParams, router, Href } from "expo-router";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import apiClient, { NormalizedError } from "@/src/service/apiClient";
 import { StarRating } from "@/src/components/StarRating";
@@ -343,15 +343,32 @@ export default function RatingDetailScreen() {
         {/* Comments placeholder card */}
         <View style={[styles.card, { backgroundColor: themeStyles.cardBackground, marginTop: 16 }]}>
           <Text style={[styles.commentsTitle, { color: themeStyles.textColor }]}>Comentários</Text>
-          <View style={[styles.commentsPlaceholder, { borderColor: themeStyles.border }]}>
-            <MaterialIcons name="forum" size={32} color={themeStyles.subText} style={styles.forumIcon} />
-            <Text style={[styles.commentsPlaceholderText, { color: themeStyles.subText }]}>
-              Comentários serão exibidos aqui
-            </Text>
-          </View>
           
-          {/* FUTURA INTEGRAÇÃO: Chamar GET /api/comments/post/{postId} aqui 
-              para listar e expor a inserção de comentários reais relacionados a essa avaliação. */}
+          <Pressable
+            onPress={() => {
+              // FUTURA INTEGRAÇÃO: publicData.id ainda não retornado pelo backend.
+              // Substituir quando campo 'id' for adicionado ao RatingResponseDto.
+              // Por enquanto, navega com id mockado para teste.
+              const commentId = publicData.id ?? 1;
+              router.push(`/comments/post/${commentId}` as Href);
+            }}
+            style={({ pressed }) => [
+              styles.commentsButton,
+              {
+                borderColor: themeStyles.border,
+                backgroundColor: isDark ? "#151719" : "#F8F9FA",
+              },
+              pressed && styles.pressed,
+            ]}
+          >
+            <View style={styles.commentsButtonLeft}>
+              <MaterialIcons name="forum" size={20} color={themeStyles.tintColor} />
+              <Text style={[styles.commentsButtonText, { color: themeStyles.textColor }]}>
+                Ver todos os comentários ({publicData.commentCount})
+              </Text>
+            </View>
+            <MaterialIcons name="chevron-right" size={24} color={themeStyles.subText} />
+          </Pressable>
         </View>
 
       </ScrollView>
@@ -535,21 +552,22 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     marginBottom: 14,
   },
-  commentsPlaceholder: {
-    borderWidth: 1,
-    borderStyle: "dashed",
-    borderRadius: 12,
-    paddingVertical: 32,
+  commentsButton: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
+    justifyContent: "space-between",
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 16,
   },
-  forumIcon: {
-    opacity: 0.5,
+  commentsButtonLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
   },
-  commentsPlaceholderText: {
+  commentsButtonText: {
     fontSize: 14,
-    fontWeight: "500",
+    fontWeight: "600",
   },
   errorCard: {
     borderWidth: 1,

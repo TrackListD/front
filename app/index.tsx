@@ -31,6 +31,12 @@ export default function Home() {
         onPress={() => router.push("/ratings/user/1" as Href)}
       />
 
+      {/* TEMPORÁRIO: substituir pelo postId real da Rating após entrega do campo 'id' no RatingResponseDto. */}
+      <Button
+        title="Ver Comentários de Post (Teste)"
+        onPress={() => router.push("/comments/post/1" as Href)}
+      />
+
       <Button
         title="Logout"
         onPress={() => signOut(auth)}

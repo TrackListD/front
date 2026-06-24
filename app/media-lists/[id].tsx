@@ -15,6 +15,8 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import apiClient, { NormalizedError } from "@/src/service/apiClient";
 import { MediaListResponseDto, MediaListOwnerResponseDto } from "@/src/types/mediaList";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import EditMediaListNameModal from "@/src/components/EditMediaListNameModal";
+import EditMediaListPrivacyModal from "@/src/components/EditMediaListPrivacyModal";
 
 export default function MediaListDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -25,6 +27,10 @@ export default function MediaListDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<NormalizedError | null>(null);
   const [mediaList, setMediaList] = useState<MediaListResponseDto | MediaListOwnerResponseDto | null>(null);
+
+  // Modals visibility states
+  const [isNameModalVisible, setNameModalVisible] = useState(false);
+  const [isPrivacyModalVisible, setPrivacyModalVisible] = useState(false);
 
   const fetchDetail = async () => {
     if (!id) return;
@@ -149,7 +155,13 @@ export default function MediaListDetailScreen() {
           headerRight: () =>
             isOwner ? (
               <Pressable
-                onPress={() => Alert.alert("Opções", "Opções do dono: Editar/Deletar (FUTURO)")}
+                onPress={() =>
+                  Alert.alert("Opções da Lista", "O que deseja fazer?", [
+                    { text: "Editar Nome", onPress: () => setNameModalVisible(true) },
+                    { text: "Editar Privacidade", onPress: () => setPrivacyModalVisible(true) },
+                    { text: "Cancelar", style: "cancel" },
+                  ])
+                }
                 style={({ pressed }) => [styles.headerButton, pressed && styles.pressed]}
               >
                 <MaterialIcons name="more-vert" size={24} color={themeStyles.textColor} />
@@ -277,6 +289,25 @@ export default function MediaListDetailScreen() {
           )}
         </View>
       </ScrollView>
+
+      {isOwner && mediaList && (
+        <>
+          <EditMediaListNameModal
+            visible={isNameModalVisible}
+            currentName={publicData.listName}
+            listId={Number(id)}
+            onClose={() => setNameModalVisible(false)}
+            onSuccess={setMediaList}
+          />
+          <EditMediaListPrivacyModal
+            visible={isPrivacyModalVisible}
+            currentPrivacy={"whoCanSee" in mediaList ? (mediaList as MediaListOwnerResponseDto).whoCanSee : "PUBLIC"}
+            listId={Number(id)}
+            onClose={() => setPrivacyModalVisible(false)}
+            onSuccess={setMediaList}
+          />
+        </>
+      )}
     </SafeAreaView>
   );
 }

@@ -33,3 +33,12 @@ export interface MediaListFormState {
   description: string;
   tags: string;
 }
+
+export interface EditMediaListNameRequestDto {
+  newName: string;
+}
+
+export interface EditMediaListPrivacyRequestDto {
+  newPrivacy: Privacy;
+}
+

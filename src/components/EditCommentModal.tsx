@@ -15,7 +15,7 @@ import {
 } from "react-native";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import apiClient, { NormalizedError } from "@/src/service/apiClient";
-import { CommentResponseDto } from "@/src/types/comment";
+import { CommentResponseDto, CommentOwnerResponseDto } from "@/src/types/comment";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
 interface EditCommentModalProps {
@@ -70,17 +70,7 @@ export default function EditCommentModal({
     setLoading(true);
     setError(null);
     try {
-      const response = await apiClient.patch<{
-        publicData: {
-          idPost: number;
-          idAuthor: number;
-          text: string;
-          commentDate: string;
-          likeCount: number;
-        };
-        status: string;
-        updateAt: string;
-      }>(
+      const response = await apiClient.patch<CommentOwnerResponseDto>(
         `/api/comments/${commentId}/text`,
         { newText: text }
       );

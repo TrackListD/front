@@ -19,3 +19,11 @@ export interface CommentRequestDto {
 export interface EditCommentRequestDto {
   newText: string; // verificar nome exato do campo em CommentEditRequestDto.java
 }
+
+// Resposta do comentário para o proprietário (contém dados públicos sem ID + status de moderação)
+export interface CommentOwnerResponseDto {
+  publicData: Omit<CommentResponseDto, "id">;
+  status: "ACTIVE" | "BANNED" | "SUSPENDED" | "OCULT";
+  updateAt: string;
+}
+

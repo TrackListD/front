@@ -1,4 +1,4 @@
-// Tela: Detalhe de Lista de Mídias — exibe a playlist de músicas ou álbuns com distinção de visualização Dono vs. Público
+// Tela: Detalhe da Lista de Mídias — exibe a lista condicionalmente (Visão do Dono vs Visão Pública) via GET /api/mediaList/{id}
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -13,7 +13,7 @@ import {
 import { Stack, useLocalSearchParams, router, Href } from "expo-router";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import apiClient, { NormalizedError } from "@/src/service/apiClient";
-import { MediaListResponseDto, MediaListOwnerResponseDto, Privacy } from "@/src/types/mediaList";
+import { MediaListResponseDto, MediaListOwnerResponseDto } from "@/src/types/mediaList";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
 export default function MediaListDetailScreen() {
@@ -55,21 +55,7 @@ export default function MediaListDetailScreen() {
     badgeBg: isDark ? "#2A2D31" : "#F1F3F5",
     errorBg: isDark ? "#2A1818" : "#FEF2F2",
     errorText: isDark ? "#F87171" : "#B91C1C",
-    avatarBg: isDark ? "#334155" : "#E2E8F0",
     starColor: "#FFC107",
-  };
-
-  const translatePrivacy = (privacy: Privacy): { label: string; icon: "public" | "people" | "lock" } => {
-    switch (privacy) {
-      case "PUBLIC":
-        return { label: "Público", icon: "public" };
-      case "JUST_FOLLOWERS":
-        return { label: "Seguidores", icon: "people" };
-      case "PRIVATE":
-        return { label: "Privado", icon: "lock" };
-      default:
-        return { label: privacy, icon: "public" };
-    }
   };
 
   const handleToggleFavorite = async () => {
@@ -85,17 +71,20 @@ export default function MediaListDetailScreen() {
 
       setMediaList((prev) => {
         if (!prev) return null;
-        if ("publicData" in prev) {
+        const isPrevOwner = "publicData" in prev;
+        if (isPrevOwner) {
+          const ownerPrev = prev as MediaListOwnerResponseDto;
           return {
-            ...prev,
+            ...ownerPrev,
             publicData: {
-              ...prev.publicData,
+              ...ownerPrev.publicData,
               isFavorite: !isFav,
             },
           };
         } else {
+          const publicPrev = prev as MediaListResponseDto;
           return {
-            ...prev,
+            ...publicPrev,
             isFavorite: !isFav,
           };
         }
@@ -126,10 +115,10 @@ export default function MediaListDetailScreen() {
           <View style={[styles.errorCard, { backgroundColor: themeStyles.errorBg, borderColor: themeStyles.errorText }]}>
             <MaterialIcons name="error-outline" size={44} color={themeStyles.errorText} />
             <Text style={[styles.errorTitle, { color: themeStyles.errorText }]}>
-              {is404 ? "Lista Não Encontrada" : "Erro de Conexão"}
+              {is404 ? "Lista não encontrada" : "Erro de Conexão"}
             </Text>
             <Text style={[styles.errorBody, { color: themeStyles.errorText }]}>
-              {error?.message || "Ocorreu um erro ao carregar os detalhes da lista."}
+              {is404 ? "A lista de mídias solicitada não pôde ser encontrada no servidor." : (error?.message || "Ocorreu um erro ao carregar os detalhes da lista.")}
             </Text>
             <Pressable
               style={[styles.retryButton, { backgroundColor: themeStyles.tintColor }]}
@@ -143,133 +132,113 @@ export default function MediaListDetailScreen() {
     );
   }
 
-  // Type Discrimination logic for Owner vs Public responses
-  const isOwner = "publicData" in mediaList;
+  // Type Guard
+  const isOwner = mediaList && "publicData" in mediaList;
   const publicData = isOwner
     ? (mediaList as MediaListOwnerResponseDto).publicData
     : (mediaList as MediaListResponseDto);
-  const privacyVal = isOwner ? (mediaList as MediaListOwnerResponseDto).whoCanSee : "PUBLIC";
-
-  // FUTURA INTEGRAÇÃO: O backend retorna apenas os IDs do Spotify (mediaIds).
-  // Substituir pela busca rica de metadados de cada mídia (capa, título, artista)
-  // via integração Spotify API ou banco local.
-  const displayMedias = publicData.mediaIds && publicData.mediaIds.length > 0
-    ? publicData.mediaIds.map((spotifyId, index) => ({
-        id: spotifyId,
-        title: `Mídia ${index + 1}`,
-        subtitle: `ID Spotify: ${spotifyId}`,
-      }))
-    : [];
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: themeStyles.background }]}>
       <Stack.Screen
         options={{
-          title: "Detalhe da Lista",
+          title: "",
           headerStyle: { backgroundColor: themeStyles.cardBackground },
           headerTintColor: themeStyles.textColor,
           headerShadowVisible: false,
+          headerRight: () =>
+            isOwner ? (
+              <Pressable
+                onPress={() => Alert.alert("Opções", "Opções do dono: Editar/Deletar (FUTURO)")}
+                style={({ pressed }) => [styles.headerButton, pressed && styles.pressed]}
+              >
+                <MaterialIcons name="more-vert" size={24} color={themeStyles.textColor} />
+              </Pressable>
+            ) : null,
         }}
       />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Banner/Cabeçalho da Lista */}
-        <View style={[styles.card, { backgroundColor: themeStyles.cardBackground }]}>
-          <View style={styles.headerRow}>
-            <View style={styles.titleContainer}>
-              <View style={[styles.typeBadge, { backgroundColor: themeStyles.badgeBg }]}>
-                <MaterialIcons
-                  name={publicData.typeOfList === "ALBUM" ? "album" : "music-note"}
-                  size={16}
-                  color={themeStyles.tintColor}
-                />
-                <Text style={[styles.typeText, { color: themeStyles.tintColor }]}>
-                  {publicData.typeOfList === "ALBUM" ? "Álbum" : "Música"}
-                </Text>
-              </View>
-              <Text style={[styles.listName, { color: themeStyles.textColor }]}>
-                {publicData.listName}
-              </Text>
-            </View>
+        {/* Capa da Lista */}
+        {/* DEBITO TECNICO: Backend não retorna capa da lista. Usando placeholder. */}
+        <View style={[styles.coverContainer, { backgroundColor: isDark ? "#2A2D31" : "#E2E8F0" }]}>
+          <MaterialIcons
+            name={publicData.typeOfList === "ALBUM" ? "album" : "library-music"}
+            size={64}
+            color={themeStyles.subText}
+          />
+        </View>
 
-            {/* Favoritar */}
-            <Pressable onPress={handleToggleFavorite} style={styles.favButton}>
-              <MaterialIcons
-                name={publicData.isFavorite ? "star" : "star-border"}
-                size={28}
-                color={publicData.isFavorite ? themeStyles.starColor : themeStyles.subText}
-              />
-            </Pressable>
-          </View>
+        {/* Título e Autor da Lista */}
+        <View style={styles.metaContainer}>
+          <Text style={[styles.listName, { color: themeStyles.textColor }]}>
+            {publicData.listName}
+          </Text>
 
-          {/* Autor */}
-          <View style={styles.authorSection}>
-            <View style={[styles.avatar, { backgroundColor: themeStyles.avatarBg }]}>
-              <Text style={[styles.avatarText, { color: themeStyles.textColor }]}>
-                {publicData.authorName ? publicData.authorName.charAt(0).toUpperCase() : "U"}
-              </Text>
-            </View>
-            <View>
-              <Text style={[styles.authorLabel, { color: themeStyles.subText }]}>Criada por</Text>
-              <Text style={[styles.authorName, { color: themeStyles.textColor }]}>
-                {publicData.authorName || `Usuário #${publicData.idAuthor}`}
-              </Text>
-            </View>
-          </View>
-
-          {/* Se for dono: Exibe a privacidade */}
-          {isOwner && (
-            <View style={styles.privacySection}>
-              <Text style={[styles.sectionLabel, { color: themeStyles.subText }]}>Privacidade da Lista</Text>
-              <View style={[styles.privacyBadge, { backgroundColor: themeStyles.badgeBg }]}>
-                <MaterialIcons
-                  name={translatePrivacy(privacyVal).icon}
-                  size={16}
-                  color={themeStyles.textColor}
-                />
-                <Text style={[styles.privacyText, { color: themeStyles.textColor }]}>
-                  {translatePrivacy(privacyVal).label}
-                </Text>
-              </View>
-            </View>
-          )}
-
-          {/* FUTURA INTEGRAÇÃO: Exibir a descrição da lista quando implementada no backend. */}
-          <View style={styles.descriptionSection}>
-            <Text style={[styles.sectionLabel, { color: themeStyles.subText }]}>Descrição</Text>
-            <Text style={[styles.descriptionText, { color: themeStyles.textColor }]}>
-              // FUTURA INTEGRAÇÃO: Campo 'description' não implementado na API.
-              {"\n"}Esta lista agrupa mídias selecionadas pelo autor.
+          <View style={styles.authorRow}>
+            <MaterialIcons name="account-circle" size={20} color={themeStyles.subText} />
+            <Text style={[styles.authorName, { color: themeStyles.textColor }]}>
+              {publicData.authorName || `Usuário #${publicData.idAuthor}`}
             </Text>
           </View>
 
-          {/* FUTURA INTEGRAÇÃO: Exibir tags da lista quando suportado. */}
-          <View style={styles.tagsSection}>
-            <Text style={[styles.sectionLabel, { color: themeStyles.subText }]}>Tags</Text>
-            <View style={styles.tagRow}>
-              <View style={[styles.tag, { backgroundColor: themeStyles.badgeBg }]}>
-                <Text style={[styles.tagText, { color: themeStyles.subText }]}>
-                  #playlist
-                </Text>
-              </View>
-              <View style={[styles.tag, { backgroundColor: themeStyles.badgeBg }]}>
-                <Text style={[styles.tagText, { color: themeStyles.subText }]}>
-                  #{publicData.typeOfList.toLowerCase()}
-                </Text>
-              </View>
-            </View>
+          {/* Estatísticas */}
+          <View style={styles.statsRow}>
+            {/* DEBITO TECNICO: Duração total ausente */}
+            <Text style={[styles.statsText, { color: themeStyles.subText }]}>
+              2h 14min
+            </Text>
+            <Text style={[styles.statsDot, { color: themeStyles.subText }]}>•</Text>
+            <Text style={[styles.statsText, { color: themeStyles.subText }]}>
+              {publicData.mediaIds ? publicData.mediaIds.length : 0}{" "}
+              {publicData.typeOfList === "ALBUM"
+                ? publicData.mediaIds.length === 1 ? "álbum" : "álbuns"
+                : publicData.mediaIds.length === 1 ? "música" : "músicas"}
+            </Text>
+          </View>
+        </View>
+
+        {/* Barra de Ações (Action Bar) */}
+        <View style={styles.actionBar}>
+          <View style={styles.actionBarLeft}>
+            {isOwner && (
+              <Pressable
+                onPress={() => Alert.alert("Ação", "Adicionar mídia (FUTURO)")}
+                style={({ pressed }) => [
+                  styles.addButton,
+                  { backgroundColor: "#10B981" },
+                  pressed && styles.pressed,
+                ]}
+              >
+                <MaterialIcons name="add" size={28} color="#FFFFFF" />
+              </Pressable>
+            )}
+
+            <Pressable onPress={handleToggleFavorite} style={styles.actionButton}>
+              <MaterialIcons
+                name={publicData.isFavorite ? "favorite" : "favorite-border"}
+                size={28}
+                color={publicData.isFavorite ? "#EF4444" : themeStyles.subText}
+              />
+            </Pressable>
+
+            {/* DEBITO TECNICO: Sem funcionalidade de compartilhamento no backend. */}
+            <Pressable
+              onPress={() => Alert.alert("Compartilhar", "Sem funcionalidade de compartilhamento no backend.")}
+              style={styles.actionButton}
+            >
+              <MaterialIcons name="share" size={24} color={themeStyles.subText} />
+            </Pressable>
           </View>
         </View>
 
         {/* Lista de Mídias */}
         <View style={[styles.card, { backgroundColor: themeStyles.cardBackground, marginTop: 16 }]}>
-          <View style={styles.mediaHeaderRow}>
-            <Text style={[styles.sectionTitle, { color: themeStyles.textColor }]}>
-              Mídias da Lista ({publicData.mediaIds.length})
-            </Text>
-          </View>
+          <Text style={[styles.sectionTitle, { color: themeStyles.textColor }]}>
+            Conteúdo da Lista
+          </Text>
 
-          {displayMedias.length === 0 ? (
+          {!publicData.mediaIds || publicData.mediaIds.length === 0 ? (
             <View style={styles.emptyContainer}>
               <MaterialIcons name="library-music" size={40} color={themeStyles.subText} style={styles.emptyIcon} />
               <Text style={[styles.emptyText, { color: themeStyles.subText }]}>
@@ -278,8 +247,9 @@ export default function MediaListDetailScreen() {
             </View>
           ) : (
             <View style={styles.mediaList}>
-              {displayMedias.map((media) => (
-                <View key={media.id} style={[styles.mediaCard, { borderColor: themeStyles.border }]}>
+              {/* DEBITO TECNICO: Renderizando IDs diretos. Mídia real bloqueada pela entrega da sprint de Mídia. */}
+              {publicData.mediaIds.map((mediaId) => (
+                <View key={mediaId} style={[styles.mediaCard, { borderColor: themeStyles.border }]}>
                   <View style={[styles.mediaIconBg, { backgroundColor: themeStyles.badgeBg }]}>
                     <MaterialIcons
                       name={publicData.typeOfList === "ALBUM" ? "album" : "music-note"}
@@ -288,13 +258,19 @@ export default function MediaListDetailScreen() {
                     />
                   </View>
                   <View style={styles.mediaInfo}>
-                    <Text style={[styles.mediaTitle, { color: themeStyles.textColor }]}>
-                      {media.title}
+                    <Text style={[styles.mediaTitle, { color: themeStyles.textColor }]} numberOfLines={1}>
+                      Mídia ID: {mediaId}
                     </Text>
                     <Text style={[styles.mediaSubtitle, { color: themeStyles.subText }]}>
-                      {media.subtitle}
+                      Artista Bloqueado
                     </Text>
                   </View>
+                  <Pressable
+                    onPress={() => Alert.alert("Opções da Mídia", "Opções adicionais (FUTURO)")}
+                    style={styles.moreButton}
+                  >
+                    <MaterialIcons name="more-vert" size={20} color={themeStyles.subText} />
+                  </Pressable>
                 </View>
               ))}
             </View>
@@ -318,6 +294,84 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 16,
   },
+  coverContainer: {
+    width: 160,
+    height: 160,
+    borderRadius: 16,
+    alignSelf: "center",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+    marginBottom: 20,
+  },
+  metaContainer: {
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 20,
+  },
+  listName: {
+    fontSize: 24,
+    fontWeight: "800",
+    textAlign: "center",
+  },
+  authorRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  authorName: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  statsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  statsText: {
+    fontSize: 13,
+    fontWeight: "500",
+  },
+  statsDot: {
+    fontSize: 13,
+  },
+  actionBar: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 10,
+    marginBottom: 10,
+  },
+  actionBarLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+  },
+  addButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  actionButton: {
+    padding: 6,
+  },
+  headerButton: {
+    padding: 6,
+  },
+  pressed: {
+    opacity: 0.7,
+  },
   card: {
     borderRadius: 16,
     padding: 20,
@@ -327,114 +381,9 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
-  headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-  },
-  titleContainer: {
-    flex: 1,
-    gap: 8,
-  },
-  typeBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    alignSelf: "flex-start",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    gap: 4,
-  },
-  typeText: {
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  listName: {
-    fontSize: 22,
-    fontWeight: "800",
-    lineHeight: 28,
-  },
-  favButton: {
-    padding: 4,
-  },
-  authorSection: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    marginTop: 18,
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  avatarText: {
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  authorLabel: {
-    fontSize: 11,
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
-  },
-  authorName: {
-    fontSize: 15,
-    fontWeight: "700",
-  },
-  sectionLabel: {
-    fontSize: 11,
-    fontWeight: "700",
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
-    marginBottom: 6,
-  },
-  privacySection: {
-    marginTop: 18,
-  },
-  privacyBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    alignSelf: "flex-start",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    gap: 6,
-  },
-  privacyText: {
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  descriptionSection: {
-    marginTop: 18,
-  },
-  descriptionText: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontStyle: "italic",
-  },
-  tagsSection: {
-    marginTop: 18,
-  },
-  tagRow: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  tag: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  tagText: {
-    fontSize: 12,
-    fontWeight: "600",
-  },
   sectionTitle: {
     fontSize: 16,
     fontWeight: "700",
-  },
-  mediaHeaderRow: {
     marginBottom: 14,
   },
   emptyContainer: {
@@ -479,6 +428,9 @@ const styles = StyleSheet.create({
   },
   mediaSubtitle: {
     fontSize: 12,
+  },
+  moreButton: {
+    padding: 4,
   },
   errorCard: {
     borderWidth: 1,

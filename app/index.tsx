@@ -43,6 +43,12 @@ export default function Home() {
         onPress={() => router.push("/media-lists/create" as Href)}
       />
 
+      {/* TEMPORÁRIO: botão de teste para navegar até a tela de detalhe de lista de mídias. */}
+      <Button
+        title="Ver Detalhe de Lista (Teste)"
+        onPress={() => router.push("/media-lists/1" as Href)}
+      />
+
       <Button
         title="Logout"
         onPress={() => signOut(auth)}

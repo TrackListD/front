@@ -49,6 +49,12 @@ export default function Home() {
         onPress={() => router.push("/media-lists/1" as Href)}
       />
 
+      {/* TEMPORÁRIO: botão de teste para navegar até a tela de perfil e listas do usuário. */}
+      <Button
+        title="Ver Meu Perfil / Listas (Teste)"
+        onPress={() => router.push("/media-lists/user/me" as Href)}
+      />
+
       <Button
         title="Logout"
         onPress={() => signOut(auth)}

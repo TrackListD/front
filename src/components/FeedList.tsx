@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { onAuthStateChanged } from "firebase/auth";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -31,6 +32,7 @@ export default function FeedList({
   const [posts, setPosts] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [authLoaded, setAuthLoaded] = useState(false);
 
   const fetchFeed = useCallback(
     async (showLoadingIndicator = true) => {
@@ -60,8 +62,19 @@ export default function FeedList({
   );
 
   useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      console.log("Firebase carregou:", user?.uid);
+      setAuthLoaded(true);
+    });
+
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
+    if (!authLoaded) return;
+
     fetchFeed();
-  }, [fetchFeed]);
+  }, [authLoaded, fetchFeed]);
 
   const handleRefresh = () => {
     setRefreshing(true);

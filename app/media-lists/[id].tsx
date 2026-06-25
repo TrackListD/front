@@ -17,6 +17,7 @@ import { MediaListResponseDto, MediaListOwnerResponseDto } from "@/src/types/med
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import EditMediaListNameModal from "@/src/components/EditMediaListNameModal";
 import EditMediaListPrivacyModal from "@/src/components/EditMediaListPrivacyModal";
+import AddMediaModal from "@/src/components/AddMediaModal";
 
 export default function MediaListDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -31,6 +32,7 @@ export default function MediaListDetailScreen() {
   // Modals visibility states
   const [isNameModalVisible, setNameModalVisible] = useState(false);
   const [isPrivacyModalVisible, setPrivacyModalVisible] = useState(false);
+  const [isAddMediaModalVisible, setAddMediaModalVisible] = useState(false);
 
   const fetchDetail = async () => {
     if (!id) return;
@@ -128,6 +130,18 @@ export default function MediaListDetailScreen() {
     );
   };
 
+  const handleRemoveMedia = async (mediaId: string) => {
+    if (!id) return;
+    try {
+      const response = await apiClient.delete<MediaListOwnerResponseDto>(
+        `/api/mediaList/${id}/medias/${mediaId}`
+      );
+      setMediaList(response.data);
+    } catch (err) {
+      const normalized = err as NormalizedError;
+      Alert.alert("Erro", normalized.message || "Não foi possível remover a mídia da lista.");
+    }
+  };
 
   if (loading) {
     return (
@@ -244,7 +258,7 @@ export default function MediaListDetailScreen() {
           <View style={styles.actionBarLeft}>
             {isOwner && (
               <Pressable
-                onPress={() => Alert.alert("Ação", "Adicionar mídia (FUTURO)")}
+                onPress={() => setAddMediaModalVisible(true)}
                 style={({ pressed }) => [
                   styles.addButton,
                   { backgroundColor: "#10B981" },
@@ -307,7 +321,20 @@ export default function MediaListDetailScreen() {
                     </Text>
                   </View>
                   <Pressable
-                    onPress={() => Alert.alert("Opções da Mídia", "Opções adicionais (FUTURO)")}
+                    onPress={() => {
+                      if (isOwner) {
+                        Alert.alert("Opções da Mídia", "O que deseja fazer?", [
+                          {
+                            text: "Remover da Lista",
+                            style: "destructive",
+                            onPress: () => handleRemoveMedia(mediaId),
+                          },
+                          { text: "Cancelar", style: "cancel" },
+                        ]);
+                      } else {
+                        Alert.alert("Opções da Mídia", "Sem opções adicionais disponíveis.");
+                      }
+                    }}
                     style={styles.moreButton}
                   >
                     <MaterialIcons name="more-vert" size={20} color={themeStyles.subText} />
@@ -333,6 +360,13 @@ export default function MediaListDetailScreen() {
             currentPrivacy={"whoCanSee" in mediaList ? (mediaList as MediaListOwnerResponseDto).whoCanSee : "PUBLIC"}
             listId={Number(id)}
             onClose={() => setPrivacyModalVisible(false)}
+            onSuccess={setMediaList}
+          />
+          <AddMediaModal
+            visible={isAddMediaModalVisible}
+            listId={Number(id)}
+            typeOfList={publicData.typeOfList}
+            onClose={() => setAddMediaModalVisible(false)}
             onSuccess={setMediaList}
           />
         </>

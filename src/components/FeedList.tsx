@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import HeaderNavbar from "../../components/HeaderNavbar";
 import { FeedItem } from "../../types/feed";
-import { authFetch, toggleLike } from "../service/api";
+import { authFetch, followUser, toggleLike } from "../service/api";
 import { auth } from "../service/firebase";
 
 type FeedListProps = {
@@ -129,6 +129,47 @@ export default function FeedList({
     [router],
   );
 
+  const handleFollow = useCallback(
+    async (authorId: number) => {
+      if (!auth.currentUser) {
+        router.push("/login");
+        return;
+      }
+
+      // atualização otimista
+      setPosts((currentPosts) =>
+        currentPosts.map((post) =>
+          post.author.id === authorId
+            ? {
+                ...post,
+                authorFollowedByAuthUser: true,
+              }
+            : post,
+        ),
+      );
+
+      try {
+        await followUser(authorId);
+      } catch (error) {
+        console.error("Erro ao seguir usuário:", authorId, error);
+
+        setPosts((currentPosts) =>
+          currentPosts.map((post) =>
+            post.author.id === authorId
+              ? {
+                  ...post,
+                  authorFollowedByAuthUser: false,
+                }
+              : post,
+          ),
+        );
+
+        Alert.alert("Erro", "Não foi possível seguir este usuário.");
+      }
+    },
+    [router],
+  );
+
   const formatTimeAgo = (dateString: string) => {
     try {
       const pubDate = new Date(dateString);
@@ -184,12 +225,22 @@ export default function FeedList({
             style={styles.avatar}
             resizeMode="cover"
           />
+
           <View style={styles.userTextContainer}>
             <Text style={styles.userName}>{displayName}</Text>
             <Text style={styles.userHandle}>
               {displayUsername} • {formatTimeAgo(item.publicationDate)}
             </Text>
           </View>
+
+          {!item.authorFollowedByAuthUser && (
+            <TouchableOpacity
+              style={styles.followButton}
+              onPress={() => handleFollow(item.author.id)}
+            >
+              <Text style={styles.followButtonText}>Seguir</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* 1. VISUALIZAÇÃO: SE FOR AVALIAÇÃO DE MÍDIA COMPARTILHADA (RATING) */}
@@ -498,6 +549,19 @@ const styles = StyleSheet.create({
     color: "#1DB954",
     fontSize: 12,
     fontWeight: "600",
+  },
+  followButton: {
+    marginLeft: "auto",
+    backgroundColor: "#1DB954",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 16,
+  },
+
+  followButtonText: {
+    color: "#FFFFFF",
+    fontWeight: "700",
+    fontSize: 13,
   },
 
   // Barra de Interações Inferior

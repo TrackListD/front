@@ -22,4 +22,5 @@ export interface FeedItem {
   likesCount: number;
   likedByMe: boolean;
   media: Media | null;
+  authorFollowedByAuthUser: boolean;
 }

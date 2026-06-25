@@ -14,7 +14,8 @@ import {
 } from "react-native";
 import HeaderNavbar from "../../components/HeaderNavbar";
 import { FeedItem } from "../../types/feed";
-import { authFetch, followUser, toggleLike } from "../service/api";
+import { authFetch } from "../service/api";
+import { followUser, toggleLike } from "../service/feedApi";
 import { auth } from "../service/firebase";
 
 type FeedListProps = {

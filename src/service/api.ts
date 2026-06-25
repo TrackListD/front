@@ -1,5 +1,6 @@
 import Constants from "expo-constants";
 import { Platform } from "react-native";
+import { waitForAuth } from "../auth/authState";
 import { auth } from "./firebase";
 
 function resolveHost(): string {
@@ -28,9 +29,10 @@ export const API_BASE_URL = `http://${resolveHost()}:8080/api`;
 export async function authFetch(path: string, options: RequestInit = {}) {
   const headers = new Headers(options.headers);
 
-  const currentUser = auth.currentUser;
-  if (currentUser) {
-    const idToken = await currentUser.getIdToken();
+  const user = await waitForAuth();
+
+  if (user) {
+    const idToken = await user.getIdToken(true);
     headers.set("Authorization", `Bearer ${idToken}`);
   }
 
@@ -40,29 +42,4 @@ export async function authFetch(path: string, options: RequestInit = {}) {
   });
 }
 
-export type LikeResponse = {
-  liked: boolean;
-  likesCount: number;
-};
-
-export async function toggleLike(publicationId: number): Promise<LikeResponse> {
-  const response = await authFetch(`/publications/${publicationId}/like`, {
-    method: "POST",
-  });
-
-  if (!response.ok) {
-    throw new Error(`Falha ao curtir publicação: ${response.status}`);
-  }
-
-  return response.json();
-}
-
-export async function followUser(friendId: number): Promise<void> {
-  const response = await authFetch(`/users/follow/${friendId}`, {
-    method: "POST",
-  });
-
-  if (!response.ok) {
-    throw new Error(`Falha ao seguir usuário: ${response.status}`);
-  }
-}
+console.log("USER:", auth.currentUser);

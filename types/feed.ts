@@ -23,4 +23,13 @@ export interface FeedItem {
   likedByMe: boolean;
   media: Media | null;
   authorFollowedByAuthUser: boolean;
+  mediaList?: MediaMin[];
 }
+
+export type MediaMin = {
+  id: string;
+  title: string;
+  artist: string;
+  type: "album" | "music" | "unknown";
+  coverUrl: string | null;
+};

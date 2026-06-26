@@ -104,7 +104,10 @@ export default function HeaderNavbar() {
           onPress={() => setMenuVisible(false)}
         >
           <View style={styles.menuContainer}>
-            <TouchableOpacity style={styles.menuItem} onPress={handleProfile}>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => router.push("/profile/me")}
+            >
               <Ionicons name="person-outline" size={20} color="#FFFFFF" />
               <Text style={styles.menuText}>Meu Perfil</Text>
             </TouchableOpacity>

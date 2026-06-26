@@ -43,9 +43,6 @@ export type UserProfile = {
   favoriteAlbum: MediaMin | null;
   favoriteMusic: MediaMin | null;
   favoriteArtist: ArtistMin | null;
-
-  ratings: RatingResponse[];
-  mediaLists: MediaListResponse[];
 };
 
 export type UserMin = {

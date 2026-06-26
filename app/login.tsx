@@ -2,7 +2,11 @@ import { AntDesign } from "@expo/vector-icons"; // Importando os ícones do Expo
 import * as Google from "expo-auth-session/providers/google";
 import { Link, useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
-import { GoogleAuthProvider, signInWithCredential } from "firebase/auth";
+import {
+  GoogleAuthProvider,
+  onAuthStateChanged,
+  signInWithCredential,
+} from "firebase/auth";
 import React, { useEffect } from "react";
 import {
   Image,
@@ -23,6 +27,15 @@ export default function Login() {
     iosClientId: process.env.EXPO_PUBLIC_IOS_CLIENT_ID,
     responseType: "id_token",
   });
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        router.replace("/feed/me");
+      }
+    });
+    return unsubscribe;
+  }, [router]);
 
   useEffect(() => {
     const handleLogin = async () => {

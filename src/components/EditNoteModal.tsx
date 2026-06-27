@@ -36,12 +36,14 @@ export default function EditNoteModal({
   const [note, setNote] = useState(currentNote);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   // Sincroniza o estado com a propriedade quando o modal é aberto
   useEffect(() => {
     if (visible) {
       setNote(currentNote);
       setError(null);
+      setValidationError(null);
     }
   }, [visible, currentNote]);
 
@@ -59,6 +61,10 @@ export default function EditNoteModal({
   };
 
   const handleSave = async () => {
+    if (note <= 0) {
+      setValidationError("A nota de avaliação deve ser maior que zero.");
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -110,7 +116,10 @@ export default function EditNoteModal({
               <View style={styles.starsWrapper}>
                 <StarRating
                   rating={note}
-                  onChange={setNote}
+                  onChange={(val) => {
+                    setNote(val);
+                    setValidationError(null);
+                  }}
                   disabled={loading}
                   filledColor={themeStyles.starColor}
                   emptyColor={themeStyles.subText}
@@ -120,6 +129,24 @@ export default function EditNoteModal({
                   {note.toFixed(1)} / 5.0
                 </Text>
               </View>
+
+              {/* Erro de validação inline */}
+              {validationError && (
+                <View
+                  style={[
+                    styles.validationErrorContainer,
+                    {
+                      backgroundColor: themeStyles.errorBg,
+                      borderColor: themeStyles.errorText,
+                    },
+                  ]}
+                >
+                  <MaterialIcons name="error-outline" size={20} color={themeStyles.errorText} style={{ marginRight: 8 }} />
+                  <Text style={[styles.validationErrorText, { color: themeStyles.errorText }]}>
+                    {validationError}
+                  </Text>
+                </View>
+              )}
 
               {/* Ações do Rodapé */}
               <View style={styles.footer}>
@@ -226,5 +253,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     color: "#FFFFFF",
+  },
+  validationErrorContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 16,
+  },
+  validationErrorText: {
+    fontSize: 14,
+    fontWeight: "500",
+    flex: 1,
   },
 });

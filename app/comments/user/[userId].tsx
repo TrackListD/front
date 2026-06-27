@@ -14,6 +14,7 @@ import { Stack, useLocalSearchParams, router, Href } from "expo-router";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import apiClient, { NormalizedError } from "@/src/service/apiClient";
 import { CommentResponseDto } from "@/src/types/comment";
+import { UserPerfilResponseDTO } from "@/src/types/user";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
 export default function UserCommentsScreen() {
@@ -34,7 +35,12 @@ export default function UserCommentsScreen() {
     setLoading(true);
     setError(null);
     try {
-      const response = await apiClient.get<CommentResponseDto[]>("/api/comments/user/" + targetUserId);
+      let actualUserId = targetUserId;
+      if (targetUserId === "me") {
+        const profileRes = await apiClient.get<UserPerfilResponseDTO>("/api/users/me");
+        actualUserId = String(profileRes.data.id);
+      }
+      const response = await apiClient.get<CommentResponseDto[]>("/api/comments/user/" + actualUserId);
       setComments(response.data);
     } catch (err) {
       setError(err as NormalizedError);
@@ -106,42 +112,6 @@ export default function UserCommentsScreen() {
       />
 
       <View style={styles.container}>
-        
-        {/* TEMPORÁRIO: campo manual de userId para testes.
-            Substituir pela chamada GET /api/users/me quando o endpoint for implementado,
-            para obter automaticamente o id numérico interno do usuário logado. */}
-        <View style={[styles.searchCard, { backgroundColor: themeStyles.cardBackground, borderColor: themeStyles.border }]}>
-          <Text style={[styles.searchLabel, { color: themeStyles.textColor }]}>
-            Buscar outro UserId (Teste)
-          </Text>
-          <View style={styles.searchRow}>
-            <TextInput
-              style={[
-                styles.searchInput,
-                {
-                  backgroundColor: themeStyles.inputBg,
-                  borderColor: themeStyles.border,
-                  color: themeStyles.textColor,
-                },
-              ]}
-              placeholder="Digite o ID numérico"
-              placeholderTextColor={isDark ? "#525860" : "#A0A5B0"}
-              keyboardType="numeric"
-              value={searchInput}
-              onChangeText={setSearchInput}
-            />
-            <Pressable
-              onPress={handleSearch}
-              style={({ pressed }) => [
-                styles.searchButton,
-                { backgroundColor: themeStyles.tintColor },
-                pressed && { opacity: 0.8 },
-              ]}
-            >
-              <Text style={styles.searchButtonText}>Buscar</Text>
-            </Pressable>
-          </View>
-        </View>
 
         {/* Loading Indicator */}
         {loading && (

@@ -346,11 +346,7 @@ export default function RatingDetailScreen() {
           
           <Pressable
             onPress={() => {
-              // FUTURA INTEGRAÇÃO: publicData.id ainda não retornado pelo backend.
-              // Substituir quando campo 'id' for adicionado ao RatingResponseDto.
-              // Por enquanto, navega com id mockado para teste.
-              const commentId = publicData.id ?? 1;
-              router.push(`/comments/post/${commentId}` as Href);
+              router.push(`/comments/post/${publicData.id}` as Href);
             }}
             style={({ pressed }) => [
               styles.commentsButton,

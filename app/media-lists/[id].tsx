@@ -116,8 +116,7 @@ export default function MediaListDetailScreen() {
             setLoading(true);
             try {
               await apiClient.delete(`/api/mediaList/${id}`);
-              // TEMPORÁRIO: Redireciona para a Home. Futuramente, redirecionar para a tela de 'Minhas Listas' (GET /api/mediaList/user/{userId}).
-              router.replace("/" as Href);
+              router.replace("/media-lists/user/me" as Href);
             } catch (err) {
               const normalized = err as NormalizedError;
               Alert.alert("Erro", normalized.message || "Não foi possível excluir a lista.");

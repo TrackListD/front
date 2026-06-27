@@ -17,6 +17,7 @@ import { Stack, useLocalSearchParams } from "expo-router";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import apiClient, { NormalizedError } from "@/src/service/apiClient";
 import { CommentResponseDto } from "@/src/types/comment";
+import { UserPerfilResponseDTO } from "@/src/types/user";
 import EditCommentModal from "@/src/components/EditCommentModal";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
@@ -26,9 +27,10 @@ export default function PostCommentsScreen() {
   const isDark = colorScheme === "dark";
 
   // States
-  const [comments, setComments] = useState<CommentResponseDto[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<NormalizedError | null>(null);
+  const [comments, setComments] = useState<CommentResponseDto[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
 
   // New comment input states
   const [newCommentText, setNewCommentText] = useState("");
@@ -58,12 +60,7 @@ export default function PostCommentsScreen() {
     setError(null);
     try {
       const response = await apiClient.get<CommentResponseDto[]>("/api/comments/post/" + postId);
-      // Injeta IDs sequenciais temporários ou o ID real caso retornado para fins de listagem
-      const dataWithIds = response.data.map((c, index) => ({
-        ...c,
-        id: c.id ?? index + 1,
-      }));
-      setComments(dataWithIds);
+      setComments(response.data);
     } catch (err) {
       setError(err as NormalizedError);
     } finally {
@@ -73,6 +70,15 @@ export default function PostCommentsScreen() {
 
   useEffect(() => {
     fetchComments();
+    const fetchCurrentUser = async () => {
+      try {
+        const response = await apiClient.get<UserPerfilResponseDTO>("/api/users/me");
+        setCurrentUserId(response.data.id);
+      } catch (err) {
+        console.error("Erro ao carregar usuário atual:", err);
+      }
+    };
+    fetchCurrentUser();
   }, [postId]);
 
   const parseBackendDate = (dateStr: string) => {
@@ -150,9 +156,7 @@ export default function PostCommentsScreen() {
   };
 
   const renderCommentCard = ({ item }: { item: CommentResponseDto }) => {
-    // TEMPORÁRIO: ownership sempre false — substituir por verificação real
-    // quando GET /api/users/me for implementado e retornar o id numérico do usuário logado.
-    const isOwner = false;
+    const isOwner = currentUserId !== null && item.idAuthor === currentUserId;
 
     return (
       <View style={[styles.commentCard, { backgroundColor: themeStyles.cardBackground, borderColor: themeStyles.border }]}>

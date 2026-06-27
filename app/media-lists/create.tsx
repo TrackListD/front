@@ -73,8 +73,7 @@ export default function CreateMediaListScreen() {
     try {
       const response = await apiClient.post<MediaListOwnerResponseDto>("/api/mediaList", payload);
 
-      // TEMPORÁRIO: Navegação mockada. Substituir por router.replace(`/media-lists/${response.data.publicData.id}`) quando o backend retornar o ID.
-      router.replace("/media-lists/1" as Href);
+      router.replace(`/media-lists/${response.data.publicData.id}` as Href);
     } catch (err) {
       const normalized = err as NormalizedError;
       setSubmitError(normalized.message || "Erro ao criar a lista de mídias.");

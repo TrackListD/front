@@ -1,9 +1,8 @@
-// Tela: Home — tela inicial temporária com botões de teste de navegação.
+// Tela: Home — tela inicial do aplicativo.
 
 import { View, Text, Button } from "react-native";
 import { auth } from "../src/service/firebase";
 import { signOut } from "firebase/auth";
-import { router, Href } from "expo-router";
 
 export default function Home() {
   const user = auth.currentUser;
@@ -14,46 +13,6 @@ export default function Home() {
 
       <Text>{user?.displayName}</Text>
       <Text>{user?.email}</Text>
-
-      {/* TEMPORÁRIO: botão de teste para navegação até a tela de Detalhe.
-          Substituir pelo fluxo real quando a tela de Lista de Avaliações
-          (GET /api/ratings/user/{userId}) for implementada.
-          O ID fixo "1" deve ser substituído por um ID real após a entrega
-          da sprint de Mídia pelo colega responsável (dependência bloqueante). */}
-      <Button
-        title="Ver Avaliação de Teste"
-        onPress={() => router.push("/ratings/1" as Href)}
-      />
-
-      {/* TEMPORÁRIO: substituir pelo userId real do usuário logado via GET /api/users/me. */}
-      <Button
-        title="Ver Lista de Avaliações (Teste)"
-        onPress={() => router.push("/ratings/user/1" as Href)}
-      />
-
-      {/* TEMPORÁRIO: substituir pelo postId real da Rating após entrega do campo 'id' no RatingResponseDto. */}
-      <Button
-        title="Ver Comentários de Post (Teste)"
-        onPress={() => router.push("/comments/post/1" as Href)}
-      />
-
-      {/* TEMPORÁRIO: botão de teste para navegar até a tela de criação de lista de mídias. */}
-      <Button
-        title="Criar Lista de Mídia (Teste)"
-        onPress={() => router.push("/media-lists/create" as Href)}
-      />
-
-      {/* TEMPORÁRIO: botão de teste para navegar até a tela de detalhe de lista de mídias. */}
-      <Button
-        title="Ver Detalhe de Lista (Teste)"
-        onPress={() => router.push("/media-lists/1" as Href)}
-      />
-
-      {/* TEMPORÁRIO: botão de teste para navegar até a tela de perfil e listas do usuário. */}
-      <Button
-        title="Ver Meu Perfil / Listas (Teste)"
-        onPress={() => router.push("/media-lists/user/me" as Href)}
-      />
 
       <Button
         title="Logout"

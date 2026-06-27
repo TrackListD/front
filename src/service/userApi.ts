@@ -43,6 +43,7 @@ export type UserProfile = {
   favoriteAlbum: MediaMin | null;
   favoriteMusic: MediaMin | null;
   favoriteArtist: ArtistMin | null;
+  currentUserIsFollowing: boolean;
 };
 
 export type UserMin = {

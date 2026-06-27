@@ -1,38 +1,89 @@
 // app/profile/[id].tsx
-import { useLocalSearchParams } from "expo-router";
+
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
 import { ProfileView } from "../../components/ProfileView";
-import { getUserById, UserProfile } from "../../src/service/userApi";
+import {
+  followUser,
+  getUserById,
+  unfollowUser,
+  UserProfile,
+} from "../../src/service/userApi";
 
 export default function ProfileScreen() {
   const { id } = useLocalSearchParams();
-  console.log("PROFILE SCREEN MONTOU, id =", id);
+  const router = useRouter();
+
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [following, setFollowing] = useState(false);
 
   useEffect(() => {
-    async function loadProfile() {
-      try {
-        console.log("Buscando usuário com id:", Number(id));
-        const data = await getUserById(Number(id));
-        console.log("Usuário recebido:", data);
-        setUser(data);
-      } catch (err) {
-        console.log("ERRO ao buscar usuário:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
     loadProfile();
   }, [id]);
 
-  if (loading)
+  async function loadProfile() {
+    try {
+      setLoading(true);
+
+      const data = await getUserById(Number(id));
+
+      setUser(data);
+    } catch (err: any) {
+      console.log("Erro ao carregar perfil:", err);
+
+      if (err?.message?.includes("401") || err?.message?.includes("403")) {
+        router.replace("/login");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleFollowPress() {
+    if (!user) return;
+
+    const wasFollowing = user.currentUserIsFollowing;
+
+    // Atualização otimista da UI
+    setUser({
+      ...user,
+      currentUserIsFollowing: !wasFollowing,
+      followersCount: wasFollowing
+        ? Math.max(0, user.followersCount - 1)
+        : user.followersCount + 1,
+    });
+
+    try {
+      if (wasFollowing) {
+        await unfollowUser(user.id);
+      } else {
+        await followUser(user.id);
+      }
+    } catch (err: any) {
+      console.log(err);
+
+      // desfaz alteração
+      setUser(user);
+
+      if (err?.message?.includes("401") || err?.message?.includes("403")) {
+        router.replace("/login");
+      }
+    }
+  }
+
+  if (loading) {
     return (
-      <ActivityIndicator style={{ flex: 1, backgroundColor: "#111214" }} />
+      <ActivityIndicator
+        style={{
+          flex: 1,
+          backgroundColor: "#111214",
+        }}
+      />
     );
-  if (!user)
+  }
+
+  if (!user) {
     return (
       <View
         style={{
@@ -45,13 +96,14 @@ export default function ProfileScreen() {
         <Text style={{ color: "#a1a1a1" }}>Usuário não encontrado</Text>
       </View>
     );
+  }
 
   return (
     <ProfileView
       user={user}
       isMe={false}
-      following={following}
-      onFollowPress={() => setFollowing(!following)}
+      following={user.currentUserIsFollowing}
+      onFollowPress={handleFollowPress}
     />
   );
 }

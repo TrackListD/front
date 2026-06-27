@@ -81,11 +81,6 @@ export default function HeaderNavbar() {
         {/* Ações */}
         <View style={styles.actionsContainer}>
           <TouchableOpacity style={styles.iconButton}>
-            <Ionicons name="notifications-outline" size={22} color="#FFFFFF" />
-            <View style={styles.badgeNotification} />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.iconButton}>
             <Ionicons name="settings-outline" size={22} color="#FFFFFF" />
           </TouchableOpacity>
         </View>

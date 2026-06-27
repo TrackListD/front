@@ -298,38 +298,30 @@ export function ProfileView({
 /* ===================== FAVORITOS ===================== */
 
 function FavoriteCard({ title, item }: { title: string; item: any }) {
-  if (!item) {
-    return (
-      <View style={styles.favoriteCard}>
-        <Text style={styles.favoriteType}>{title}</Text>
-        <Text style={styles.textSubtleError}>Nenhum favorito</Text>
-      </View>
-    );
-  }
-
   const image =
-    item.coverUrl ||
-    item.profilePictureURL ||
-    "https://via.placeholder.com/200";
+    item?.coverUrl ||
+    item?.profilePictureURL ||
+    "https://placehold.co/300x300/2c2c2e/ffffff?text=TrackListd";
 
-  const name = item.title || item.name;
+  const name = item?.title || item?.name || "Não definido";
+
+  const subtitle =
+    item?.artist ||
+    (title === "Artista Favorito" ? "Artista" : "Adicione um favorito");
 
   return (
     <View style={styles.favoriteCard}>
       <Text style={styles.favoriteType}>{title}</Text>
-      <View style={styles.favoriteContent}>
-        <Image source={{ uri: image }} style={styles.favoriteImage} />
-        <View style={styles.favoriteInfo}>
-          <Text style={styles.favoriteName} numberOfLines={2}>
-            {name}
-          </Text>
-          {item.artist && (
-            <Text style={styles.favoriteArtist} numberOfLines={1}>
-              {item.artist}
-            </Text>
-          )}
-        </View>
-      </View>
+
+      <Image source={{ uri: image }} style={styles.favoriteImage} />
+
+      <Text style={styles.favoriteName} numberOfLines={2}>
+        {name}
+      </Text>
+
+      <Text style={styles.favoriteArtist} numberOfLines={1}>
+        {subtitle}
+      </Text>
     </View>
   );
 }
@@ -413,26 +405,41 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
 
-  favoritesGrid: { paddingHorizontal: 16, gap: 12 },
+  favoritesGrid: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+  },
 
   favoriteCard: {
-    backgroundColor: COLORS.bgSubtle,
-    borderRadius: 12,
-    padding: 12,
+    width: "31%",
   },
 
   favoriteType: {
-    color: COLORS.textSubtle,
-    fontSize: 12,
+    color: COLORS.accent,
+    fontSize: 13,
     marginBottom: 8,
+    textAlign: "center",
   },
 
-  favoriteContent: { flexDirection: "row", alignItems: "center" },
-  favoriteImage: { width: 50, height: 50, borderRadius: 8 },
+  favoriteImage: {
+    width: "100%",
+    aspectRatio: 1,
+    borderRadius: 10,
+  },
 
-  favoriteInfo: { marginLeft: 12, flex: 1 },
-  favoriteName: { color: COLORS.text, fontWeight: "700", fontSize: 14 },
-  favoriteArtist: { color: COLORS.textSubtle, marginTop: 2, fontSize: 12 },
+  favoriteName: {
+    color: COLORS.text,
+    fontWeight: "700",
+    fontSize: 15,
+    marginTop: 8,
+  },
+
+  favoriteArtist: {
+    color: COLORS.textSubtle,
+    fontSize: 13,
+    marginTop: 2,
+  },
 
   tabsContainer: {
     flexDirection: "row",

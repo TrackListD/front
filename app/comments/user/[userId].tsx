@@ -30,6 +30,7 @@ export default function UserCommentsScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<NormalizedError | null>(null);
   const [comments, setComments] = useState<CommentResponseDto[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
 
   const fetchComments = async (targetUserId: string) => {
     if (!targetUserId) return;
@@ -56,6 +57,15 @@ export default function UserCommentsScreen() {
       fetchComments(userId);
       setSearchInput(userId);
     }
+    const fetchCurrentUser = async () => {
+      try {
+        const response = await apiClient.get<UserPerfilResponseDTO>("/api/users/me");
+        setCurrentUserId(response.data.id);
+      } catch (err) {
+        // Trate erros silenciosamente para não bloquear a tela caso o usuário seja visitante/anônimo
+      }
+    };
+    fetchCurrentUser();
   }, [userId]);
 
   const handleSearch = () => {
@@ -121,10 +131,12 @@ export default function UserCommentsScreen() {
             data={comments}
             keyExtractor={(item, index) => String(item.id ?? index)}
             contentContainerStyle={styles.listContent}
-            renderItem={({ item }) => (
-              <Pressable
-                onPress={() => router.push((`/ratings/${item.idPost}`) as Href)}
-                style={({ pressed }) => [
+            renderItem={({ item }) => {
+              const isOwner = currentUserId !== null && item.idAuthor === currentUserId;
+              return (
+                <Pressable
+                  onPress={() => router.push((`/ratings/${item.idPost}`) as Href)}
+                  style={({ pressed }) => [
                   styles.commentCard,
                   {
                     backgroundColor: themeStyles.cardBackground,
@@ -156,7 +168,8 @@ export default function UserCommentsScreen() {
                   </Text>
                 </View>
               </Pressable>
-            )}
+            );
+          }}
           />
         )}
       </View>

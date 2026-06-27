@@ -171,10 +171,10 @@ export default function UserProfileListsScreen() {
     </View>
   );
 
-  const renderMediaListCard = ({ item, index }: { item: MediaListResponseDto | MediaListOwnerResponseDto; index: number }) => {
+  const renderMediaListCard = ({ item }: { item: MediaListResponseDto | MediaListOwnerResponseDto }) => {
+    const listId = 'publicData' in item ? item.publicData.id : item.id;
     const data = getListData(item);
-    const listId = data.id ?? index + 1;
-    const mediaCount = data.mediaIds ? data.mediaIds.length : 0;
+    const mediaCount = data.medias ? data.medias.length : 0;
     const mediaTypeLabel = data.typeOfList === "ALBUM"
       ? mediaCount === 1 ? "álbum" : "álbuns"
       : mediaCount === 1 ? "música" : "músicas";

@@ -16,6 +16,7 @@ import apiClient, { NormalizedError } from "@/src/service/apiClient";
 import { CommentResponseDto } from "@/src/types/comment";
 import { UserPerfilResponseDTO } from "@/src/types/user";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { formatDateBR } from "@/src/utils/dateUtils";
 
 export default function UserCommentsScreen() {
   const { userId } = useLocalSearchParams<{ userId: string }>();
@@ -73,30 +74,7 @@ export default function UserCommentsScreen() {
     tintColor: isDark ? "#38BDF8" : "#0A7EA4",
   };
 
-  const parseBackendDate = (dateStr: string) => {
-    try {
-      const matches = dateStr.match(/^(\d{2})-(\d{2})-(\d{4})\s+(\d{2}):(\d{2}):(\d{2})$/);
-      if (matches) {
-        const [_, day, month, year, hour, minute, second] = matches;
-        return new Date(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute), Number(second));
-      }
-      return new Date(dateStr);
-    } catch {
-      return null;
-    }
-  };
 
-  const formatDate = (dateStr: string) => {
-    const parsed = parseBackendDate(dateStr);
-    if (!parsed || isNaN(parsed.getTime())) return dateStr;
-    return parsed.toLocaleDateString("pt-BR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: themeStyles.background }]}>
@@ -161,7 +139,7 @@ export default function UserCommentsScreen() {
                       Publicação #{item.idPost}
                     </Text>
                     <Text style={[styles.dateText, { color: themeStyles.subText }]}>
-                      {formatDate(item.commentDate)}
+                      {formatDateBR(item.commentDate)}
                     </Text>
                   </View>
                   <MaterialIcons name="chevron-right" size={24} color={themeStyles.subText} />

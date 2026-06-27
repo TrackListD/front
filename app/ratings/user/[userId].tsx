@@ -18,6 +18,7 @@ import { StarRating } from "@/src/components/StarRating";
 import { RatingResponseDto } from "@/src/types/rating";
 import { UserPerfilResponseDTO } from "@/src/types/user";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { formatDateBR } from "@/src/utils/dateUtils";
 
 export default function UserRatingsScreen() {
   const { userId } = useLocalSearchParams<{ userId: string }>();
@@ -76,18 +77,7 @@ export default function UserRatingsScreen() {
     starColor: "#FFC107",
   };
 
-  const formatDate = (dateStr: string) => {
-    try {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString("pt-BR", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      });
-    } catch {
-      return dateStr;
-    }
-  };
+
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: themeStyles.background }]}>
@@ -152,7 +142,7 @@ export default function UserRatingsScreen() {
                       {item.targetName}
                     </Text>
                     <Text style={[styles.dateText, { color: themeStyles.subText }]}>
-                      {formatDate(item.publicationDate)}
+                      {formatDateBR(item.publicationDate)}
                     </Text>
                   </View>
                   <MaterialIcons name="chevron-right" size={24} color={themeStyles.subText} />

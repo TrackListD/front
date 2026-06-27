@@ -20,6 +20,7 @@ import {
   isOwnerResponse,
 } from "@/src/types/rating";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { formatDateBR } from "@/src/utils/dateUtils";
 import EditReviewModal from "@/src/components/EditReviewModal";
 import EditNoteModal from "@/src/components/EditNoteModal";
 import EditPrivacyModal from "@/src/components/EditPrivacyModal";
@@ -75,20 +76,7 @@ export default function RatingDetailScreen() {
     avatarBg: isDark ? "#334155" : "#E2E8F0",
   };
 
-  const formatDate = (dateStr: string) => {
-    try {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString("pt-BR", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    } catch {
-      return dateStr;
-    }
-  };
+
 
   const translateStatus = (status: string) => {
     switch (status) {
@@ -202,7 +190,7 @@ export default function RatingDetailScreen() {
                   {publicData.authorName}
                 </Text>
                 <Text style={[styles.dateText, { color: themeStyles.subText }]}>
-                  Publicado em {formatDate(publicData.publicationDate)}
+                  Publicado em {formatDateBR(publicData.publicationDate)}
                 </Text>
               </View>
             </View>

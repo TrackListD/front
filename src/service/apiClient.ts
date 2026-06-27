@@ -1,6 +1,7 @@
 import axios from "axios";
 import { router } from "expo-router";
 import { auth } from "./firebase";
+import { signOut } from "firebase/auth";
 
 export interface ErrorDto {
   timestamp: string;
@@ -40,14 +41,28 @@ apiClient.interceptors.request.use(
 
 apiClient.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
     let normalizedError: NormalizedError;
 
     if (error.response) {
       const status = error.response.status;
-      const data = error.response.data as Partial<ErrorDto> | undefined;
-      const errors = Array.isArray(data?.errors) ? data.errors : [];
-      const message = errors.join(", ") || data?.status || "Erro interno do servidor.";
+      const data = error.response.data as Record<string, unknown> | null | undefined;
+      const errors: string[] = data && Array.isArray(data.errors)
+        ? data.errors.map((e) => String(e))
+        : [];
+
+      let message = "";
+      if (status === 401) {
+        message = "Sua sessão expirou. Por favor, faça login novamente.";
+      } else if (status === 403) {
+        message = "Você não tem permissão para realizar esta ação.";
+      } else if (status === 404) {
+        message = "Recurso não encontrado.";
+      } else {
+        const dataMessage = data && typeof data.message === "string" ? data.message : "";
+        const dataStatus = data && typeof data.status === "string" ? data.status : "";
+        message = dataMessage || errors.join(", ") || dataStatus || "Erro interno do servidor.";
+      }
 
       normalizedError = {
         status,
@@ -56,6 +71,11 @@ apiClient.interceptors.response.use(
       };
 
       if (status === 401) {
+        try {
+          await signOut(auth);
+        } catch (signOutError) {
+          console.error("Erro ao fazer logout:", signOutError);
+        }
         router.replace("/login");
       }
     } else {

@@ -1,4 +1,6 @@
 // Tipos e DTOs de Avaliação (Ratings) — define a estrutura de dados de avaliação do frontend e payloads de requisição
+import { MediaMinDto } from "./media";
+
 export interface RatingRequestDto {
   targetId: string;
   ratingNote: number;
@@ -10,12 +12,11 @@ export interface RatingRequestDto {
 export interface RatingResponseDto {
   id: number;
   authorId: number;
-  targetId: string;
+  targetMedia: MediaMinDto;
   publicationDate: string;
   ratingNote: number;
   review: string;
   authorName: string;
-  targetName: string;
   likeCount: number;
   commentCount: number;
 }
@@ -51,6 +52,3 @@ export interface EditNoteRequestDto {
 export interface EditPrivacyRequestDto {
   newPrivacy: "PUBLIC" | "JUST_FOLLOWERS" | "PRIVATE";
 }
-
-
-

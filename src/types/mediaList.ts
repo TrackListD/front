@@ -1,4 +1,5 @@
 // Tipos e DTOs de Lista de Mídias — define a estrutura de dados e payloads de requisição
+import { MediaMinDto } from "./media";
 
 export type ListType = "ALBUM" | "MUSIC";
 export type Privacy = "PUBLIC" | "JUST_FOLLOWERS" | "PRIVATE";
@@ -10,7 +11,9 @@ export interface MediaListResponseDto {
   isFavorite: boolean;
   idAuthor: number;
   authorName: string;
-  mediaIds: string[];
+  medias: MediaMinDto[];
+  totalDurationMs: number;
+  formattedDuration: string;
 }
 
 export interface MediaListOwnerResponseDto {
@@ -41,4 +44,3 @@ export interface EditMediaListNameRequestDto {
 export interface EditMediaListPrivacyRequestDto {
   newPrivacy: Privacy;
 }
-

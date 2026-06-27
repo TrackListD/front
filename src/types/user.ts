@@ -7,4 +7,7 @@ export interface UserPerfilResponseDTO {
   whoCanComment: string;
   creationDate: string;
   estaAtivo: boolean;
+  mediaListsCount: number;
+  followersCount: number;
+  followingCount: number;
 }

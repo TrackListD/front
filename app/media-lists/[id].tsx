@@ -9,6 +9,7 @@ import {
   Pressable,
   SafeAreaView,
   Alert,
+  Image,
 } from "react-native";
 import { Stack, useLocalSearchParams, router, Href } from "expo-router";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -238,16 +239,15 @@ export default function MediaListDetailScreen() {
 
           {/* Estatísticas */}
           <View style={styles.statsRow}>
-            {/* DEBITO TECNICO: Duração total ausente */}
             <Text style={[styles.statsText, { color: themeStyles.subText }]}>
-              2h 14min
+              {publicData.formattedDuration || "0s"}
             </Text>
             <Text style={[styles.statsDot, { color: themeStyles.subText }]}>•</Text>
             <Text style={[styles.statsText, { color: themeStyles.subText }]}>
-              {publicData.mediaIds ? publicData.mediaIds.length : 0}{" "}
+              {publicData.medias ? publicData.medias.length : 0}{" "}
               {publicData.typeOfList === "ALBUM"
-                ? publicData.mediaIds.length === 1 ? "álbum" : "álbuns"
-                : publicData.mediaIds.length === 1 ? "música" : "músicas"}
+                ? publicData.medias.length === 1 ? "álbum" : "álbuns"
+                : publicData.medias.length === 1 ? "música" : "músicas"}
             </Text>
           </View>
         </View>
@@ -292,7 +292,7 @@ export default function MediaListDetailScreen() {
             Conteúdo da Lista
           </Text>
 
-          {!publicData.mediaIds || publicData.mediaIds.length === 0 ? (
+          {!publicData.medias || publicData.medias.length === 0 ? (
             <View style={styles.emptyContainer}>
               <MaterialIcons name="library-music" size={40} color={themeStyles.subText} style={styles.emptyIcon} />
               <Text style={[styles.emptyText, { color: themeStyles.subText }]}>
@@ -301,22 +301,25 @@ export default function MediaListDetailScreen() {
             </View>
           ) : (
             <View style={styles.mediaList}>
-              {/* DEBITO TECNICO: Renderizando IDs diretos. Mídia real bloqueada pela entrega da sprint de Mídia. */}
-              {publicData.mediaIds.map((mediaId) => (
-                <View key={mediaId} style={[styles.mediaCard, { borderColor: themeStyles.border }]}>
+              {publicData.medias.map((media) => (
+                <View key={media.id} style={[styles.mediaCard, { borderColor: themeStyles.border }]}>
                   <View style={[styles.mediaIconBg, { backgroundColor: themeStyles.badgeBg }]}>
-                    <MaterialIcons
-                      name={publicData.typeOfList === "ALBUM" ? "album" : "music-note"}
-                      size={20}
-                      color={themeStyles.tintColor}
-                    />
+                    {media.coverUrl ? (
+                      <Image source={{ uri: media.coverUrl }} style={{ width: 40, height: 40, borderRadius: 8 }} />
+                    ) : (
+                      <MaterialIcons
+                        name={publicData.typeOfList === "ALBUM" ? "album" : "music-note"}
+                        size={20}
+                        color={themeStyles.tintColor}
+                      />
+                    )}
                   </View>
                   <View style={styles.mediaInfo}>
                     <Text style={[styles.mediaTitle, { color: themeStyles.textColor }]} numberOfLines={1}>
-                      Mídia ID: {mediaId}
+                      {media.title}
                     </Text>
-                    <Text style={[styles.mediaSubtitle, { color: themeStyles.subText }]}>
-                      Artista Bloqueado
+                    <Text style={[styles.mediaSubtitle, { color: themeStyles.subText }]} numberOfLines={1}>
+                      {media.artist} • {media.formattedDuration}
                     </Text>
                   </View>
                   <Pressable
@@ -326,7 +329,7 @@ export default function MediaListDetailScreen() {
                           {
                             text: "Remover da Lista",
                             style: "destructive",
-                            onPress: () => handleRemoveMedia(mediaId),
+                            onPress: () => handleRemoveMedia(media.id),
                           },
                           { text: "Cancelar", style: "cancel" },
                         ]);

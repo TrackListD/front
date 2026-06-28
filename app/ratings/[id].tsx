@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Pressable,
   SafeAreaView,
+  Image,
 } from "react-native";
 import { Stack, useLocalSearchParams, router, Href } from "expo-router";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -216,12 +217,42 @@ export default function RatingDetailScreen() {
           {/* Target Name (Media title) */}
           <View style={styles.sectionContainer}>
             <Text style={[styles.sectionLabel, { color: themeStyles.subText }]}>Mídia Avaliada</Text>
-            <Text style={[styles.targetTitle, { color: themeStyles.textColor }]}>
-              {publicData.targetName}
-            </Text>
-            <Text style={[styles.targetIdSubtitle, { color: themeStyles.subText }]}>
-              ID: {publicData.targetId}
-            </Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginTop: 8 }}>
+              {publicData.targetMedia.coverUrl ? (
+                <Image
+                  source={{ uri: publicData.targetMedia.coverUrl }}
+                  style={{ width: 60, height: 60, borderRadius: 8 }}
+                />
+              ) : (
+                <View
+                  style={{
+                    width: 60,
+                    height: 60,
+                    borderRadius: 8,
+                    backgroundColor: themeStyles.badgeBg,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <MaterialIcons
+                    name={publicData.targetMedia.type === "ALBUM" ? "album" : "music-note"}
+                    size={28}
+                    color={themeStyles.tintColor}
+                  />
+                </View>
+              )}
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.targetTitle, { color: themeStyles.textColor }]} numberOfLines={2}>
+                  {publicData.targetMedia.title}
+                </Text>
+                <Text style={{ fontSize: 14, color: themeStyles.subText, marginTop: 2 }}>
+                  {publicData.targetMedia.artist}
+                </Text>
+                <Text style={{ fontSize: 12, color: themeStyles.subText, marginTop: 1 }}>
+                  Duração: {publicData.targetMedia.formattedDuration}
+                </Text>
+              </View>
+            </View>
           </View>
 
           {/* Rating note */}

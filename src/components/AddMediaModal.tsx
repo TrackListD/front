@@ -14,6 +14,7 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   Alert,
+  Image,
 } from "react-native";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import apiClient, { NormalizedError } from "@/src/service/apiClient";
@@ -132,16 +133,41 @@ export default function AddMediaModal({
     const isItemAdding = addingItemId === item.id;
     const isItemAdded = !!addedItems[item.id];
     const artistName = item.artists && item.artists.length > 0 ? item.artists[0].name : "Artista desconhecido";
+    const coverUrl = item.images && item.images.length > 0
+      ? item.images[0].url
+      : (item.cover_url && item.cover_url.length > 0 ? item.cover_url[0].url : null);
 
     return (
       <View style={[styles.itemCard, { backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border }]}>
-        <View style={styles.itemInfo}>
-          <Text style={[styles.itemTitle, { color: themeStyles.textColor }]} numberOfLines={1}>
-            {item.name}
-          </Text>
-          <Text style={[styles.itemSubtitle, { color: themeStyles.subText }]}>
-            {artistName}
-          </Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 12, flex: 1, marginRight: 12 }}>
+          {coverUrl ? (
+            <Image source={{ uri: coverUrl }} style={{ width: 40, height: 40, borderRadius: 6 }} />
+          ) : (
+            <View
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 6,
+                backgroundColor: isDark ? "#2A2D31" : "#E4E7EB",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <MaterialIcons
+                name={typeOfList === "ALBUM" ? "album" : "music-note"}
+                size={20}
+                color={themeStyles.textColor}
+              />
+            </View>
+          )}
+          <View style={styles.itemInfo}>
+            <Text style={[styles.itemTitle, { color: themeStyles.textColor }]} numberOfLines={1}>
+              {item.name}
+            </Text>
+            <Text style={[styles.itemSubtitle, { color: themeStyles.subText }]} numberOfLines={1}>
+              {artistName}
+            </Text>
+          </View>
         </View>
 
         <Pressable

@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Pressable,
   SafeAreaView,
+  Image,
 } from "react-native";
 import { Stack, useLocalSearchParams, router, Href } from "expo-router";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -137,13 +138,41 @@ export default function UserRatingsScreen() {
                 ]}
               >
                 <View style={styles.cardHeader}>
-                  <View style={styles.cardHeaderLeft}>
-                    <Text style={[styles.targetName, { color: themeStyles.textColor }]} numberOfLines={1}>
-                      {item.targetName}
-                    </Text>
-                    <Text style={[styles.dateText, { color: themeStyles.subText }]}>
-                      {formatDateBR(item.publicationDate)}
-                    </Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 12, flex: 1 }}>
+                    {item.targetMedia?.coverUrl ? (
+                      <Image
+                        source={{ uri: item.targetMedia.coverUrl }}
+                        style={{ width: 48, height: 48, borderRadius: 8 }}
+                      />
+                    ) : (
+                      <View
+                        style={{
+                          width: 48,
+                          height: 48,
+                          borderRadius: 8,
+                          backgroundColor: themeStyles.inputBg,
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <MaterialIcons
+                          name={item.targetMedia?.type === "ALBUM" ? "album" : "music-note"}
+                          size={24}
+                          color={themeStyles.tintColor}
+                        />
+                      </View>
+                    )}
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.targetName, { color: themeStyles.textColor }]} numberOfLines={1}>
+                        {item.targetMedia?.title}
+                      </Text>
+                      <Text style={{ fontSize: 13, color: themeStyles.subText }} numberOfLines={1}>
+                        {item.targetMedia?.artist}
+                      </Text>
+                      <Text style={[styles.dateText, { color: themeStyles.subText, marginTop: 2 }]}>
+                        {formatDateBR(item.publicationDate)}
+                      </Text>
+                    </View>
                   </View>
                   <MaterialIcons name="chevron-right" size={24} color={themeStyles.subText} />
                 </View>

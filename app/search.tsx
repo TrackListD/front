@@ -1,25 +1,25 @@
 import {
-    searchService,
-    SpotifySearchResponseDTO,
+  searchService,
+  SpotifySearchResponseDTO,
 } from "@/src/service/searchApi";
+import { useRouter } from "expo-router"; // 1. Importe o useRouter
 import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    FlatList,
-    Image,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  FlatList,
+  Image,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
-interface SearchIndexProps {
-  navigation: any;
-}
+interface SearchIndexProps {}
 
-export default function SearchIndex({ navigation }: SearchIndexProps) {
+export default function SearchIndex({}: SearchIndexProps) {
+  const router = useRouter(); // 3. Inicialize o router
   const [query, setQuery] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [results, setResults] = useState<SpotifySearchResponseDTO | null>(null);
@@ -50,16 +50,20 @@ export default function SearchIndex({ navigation }: SearchIndexProps) {
   };
 
   const handleItemPress = (item: any) => {
-    // Como o JSON envia "name" para todos, pegamos item.name diretamente
     const displayName = item.name;
 
     if (item.type === "artist") {
-      navigation.navigate("artist/[id]", { id: item.id, name: displayName });
+      // 4. Use o router.push para navegar com o Expo Router
+      router.push({
+        pathname: "/artist/[id]",
+        params: { id: item.id },
+      });
     } else {
       console.log(`Review para: ${displayName} | ID Spotify: ${item.id}`);
-      /* navigation.navigate('review/create', { 
-        spotifyId: item.id, 
-        mediaType: item.type
+      /* // Se precisar navegar para outras rotas no futuro, use o mesmo padrão:
+      router.push({
+        pathname: "/review/create",
+        params: { spotifyId: item.id, mediaType: item.type }
       });
       */
     }

@@ -2,7 +2,7 @@ import { followUser, getUserFeed, toggleLike } from "@/src/service/feedApi";
 import { auth } from "@/src/service/firebase";
 import { UserProfile } from "@/src/service/userApi";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, Href } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -192,7 +192,7 @@ export function ProfileView({
         <>
           <TouchableOpacity
             style={styles.backButton}
-            onPress={() => router.push("/feed/global")}
+            onPress={() => router.push("/feed/global" as Href)}
           >
             <Ionicons name="chevron-back" size={28} color={COLORS.text} />
           </TouchableOpacity>

@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, Href } from "expo-router";
 import React from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { FeedItem } from "../types/feed";
@@ -63,7 +63,7 @@ export default function PostCard({
     : defaultAvatar;
 
   const goToAuthorProfile = () => {
-    router.push(`/profile/${item.author.id}`);
+    router.push(`/profile/${item.author.id}` as Href);
   };
 
   return (

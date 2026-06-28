@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, Href } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   Image,
@@ -101,7 +101,7 @@ export default function HeaderNavbar() {
           <View style={styles.menuContainer}>
             <TouchableOpacity
               style={styles.menuItem}
-              onPress={() => router.push("/profile/me")}
+              onPress={() => router.push("/profile/me" as Href)}
             >
               <Ionicons name="person-outline" size={20} color="#FFFFFF" />
               <Text style={styles.menuText}>Meu Perfil</Text>

@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter, Href } from "expo-router";
+import { Href, useRouter } from "expo-router";
 import React from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { FeedItem } from "../types/feed";
@@ -66,6 +66,15 @@ export default function PostCard({
     router.push(`/profile/${item.author.id}` as Href);
   };
 
+  // Funções de navegação direta por ID
+  const goToRatingDetails = () => {
+    router.push(`/ratings/${item.id}` as Href);
+  };
+
+  const goToMediaListDetails = () => {
+    router.push(`/media-lists/${item.id}` as Href);
+  };
+
   return (
     <View style={styles.postContainer}>
       {/* Cabeçalho do Post */}
@@ -100,7 +109,7 @@ export default function PostCard({
 
       {/* 1. VISUALIZAÇÃO: SE FOR AVALIAÇÃO DE MÍDIA COMPARTILHADA (RATING) */}
       {item.type === "RATING" && item.media && (
-        <View>
+        <TouchableOpacity onPress={goToRatingDetails} activeOpacity={0.7}>
           <View style={styles.albumCard}>
             <Image
               source={{
@@ -122,7 +131,7 @@ export default function PostCard({
             </View>
           </View>
           <Text style={styles.commentText}>{item.content}</Text>
-        </View>
+        </TouchableOpacity>
       )}
 
       {/* 2. VISUALIZAÇÃO CAPRICHADA: SE FOR COMPARTILHAMENTO DE LISTA (MEDIA_LIST) */}
@@ -134,7 +143,11 @@ export default function PostCard({
           const remainingCount = mediaItems.length - previewTracks.length;
 
           return (
-            <View style={styles.playlistCardContainer}>
+            <TouchableOpacity
+              style={styles.playlistCardContainer}
+              onPress={goToMediaListDetails}
+              activeOpacity={0.8}
+            >
               <View style={styles.playlistHeaderRow}>
                 <View style={styles.playlistIconBadge}>
                   <Ionicons name="musical-notes" size={16} color="#1DB954" />
@@ -192,7 +205,7 @@ export default function PostCard({
                           </Text>
                         </View>
                       ))}
-                      <TouchableOpacity style={styles.viewMoreButtonMini}>
+                      <View style={styles.viewMoreButtonMini}>
                         <Text style={styles.viewMoreTextMini}>
                           {remainingCount > 0
                             ? `Ver mais ${remainingCount} ${remainingCount === 1 ? "item" : "itens"}`
@@ -204,14 +217,14 @@ export default function PostCard({
                           color="#1DB954"
                           style={{ marginLeft: 2 }}
                         />
-                      </TouchableOpacity>
+                      </View>
                     </>
                   ) : (
                     <Text style={styles.trackNameMini}>Lista vazia</Text>
                   )}
                 </View>
               </View>
-            </View>
+            </TouchableOpacity>
           );
         })()}
 

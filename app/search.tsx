@@ -1,18 +1,19 @@
 import {
-    searchService,
-    SpotifySearchResponseDTO,
+  searchService,
+  SpotifySearchResponseDTO,
 } from "@/src/service/searchApi";
+import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    FlatList,
-    Image,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  FlatList,
+  Image,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 interface SearchIndexProps {
@@ -50,18 +51,29 @@ export default function SearchIndex({ navigation }: SearchIndexProps) {
   };
 
   const handleItemPress = (item: any) => {
-    // Como o JSON envia "name" para todos, pegamos item.name diretamente
     const displayName = item.name;
 
+    // Pegando a imagem com a mesma lógica do renderItem
+    const imageUrl = item.coverURL || item.profilePictureURL || "";
+
+    // Pegando o artista padrão se for track ou album
+    const artistName = item.artists?.[0]?.name || "";
+
     if (item.type === "artist") {
+      // Mantém a navegação antiga se for artista (ou ajuste para a rota do expo-router se necessário)
       navigation.navigate("artist/[id]", { id: item.id, name: displayName });
     } else {
-      console.log(`Review para: ${displayName} | ID Spotify: ${item.id}`);
-      /* navigation.navigate('review/create', { 
-        spotifyId: item.id, 
-        mediaType: item.type
+      // Redireciona para a rota de criação de avaliação usando Expo Router
+      // Passando exatamente os parâmetros esperados pela CreateRatingScreen
+      router.push({
+        pathname: "/ratings/create", // Ajuste o caminho exato da sua pasta de rotas se for diferente (ex: "/review/create")
+        params: {
+          targetId: item.id,
+          title: displayName,
+          coverUrl: imageUrl,
+          artist: artistName,
+        },
       });
-      */
     }
   };
 

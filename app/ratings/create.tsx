@@ -9,6 +9,7 @@ import { Stack, router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -24,9 +25,15 @@ export default function CreateRatingScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
 
-  // targetId vem da URL (ex: /ratings/create?targetId=4D7wZ4DevX3v7m93Y6SV6u),
-  // setado ao navegar a partir do card de música/álbum.
-  const { targetId } = useLocalSearchParams<{ targetId?: string }>();
+  // Dados da mídia vêm da URL (setados ao navegar a partir do card de
+  // busca/música/álbum), ex:
+  // /ratings/create?targetId=...&title=...&coverUrl=...&artist=...
+  const { targetId, title, coverUrl, artist } = useLocalSearchParams<{
+    targetId?: string;
+    title?: string;
+    coverUrl?: string;
+    artist?: string;
+  }>();
 
   // Mounting and timer tracking to avoid memory leaks/setting state on unmounted component
   const isMountedRef = useRef(true);
@@ -152,6 +159,8 @@ export default function CreateRatingScreen() {
     segmentedActiveBg: isDark ? "#2C2F33" : "#FFFFFF",
     errorBg: isDark ? "#2A1818" : "#FEF2F2",
     errorText: isDark ? "#F87171" : "#B91C1C",
+    mediaCardBg: isDark ? "#1D1F22" : "#FFFFFF",
+    coverPlaceholderBg: isDark ? "#2A2D31" : "#E2E8F0",
   };
 
   const visibilityOptions = [
@@ -247,6 +256,48 @@ export default function CreateRatingScreen() {
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
+          {/* Cabeçalho com a mídia sendo avaliada */}
+          <View
+            style={[
+              styles.mediaHeaderCard,
+              { backgroundColor: themeStyles.mediaCardBg },
+            ]}
+          >
+            {coverUrl ? (
+              <Image source={{ uri: coverUrl }} style={styles.mediaCover} />
+            ) : (
+              <View
+                style={[
+                  styles.mediaCover,
+                  styles.mediaCoverPlaceholder,
+                  { backgroundColor: themeStyles.coverPlaceholderBg },
+                ]}
+              >
+                <MaterialIcons
+                  name="music-note"
+                  size={28}
+                  color={themeStyles.subText}
+                />
+              </View>
+            )}
+            <View style={styles.mediaHeaderInfo}>
+              <Text
+                style={[styles.mediaTitle, { color: themeStyles.textColor }]}
+                numberOfLines={2}
+              >
+                {title || "Mídia selecionada"}
+              </Text>
+              {artist ? (
+                <Text
+                  style={[styles.mediaArtist, { color: themeStyles.subText }]}
+                  numberOfLines={1}
+                >
+                  {artist}
+                </Text>
+              ) : null}
+            </View>
+          </View>
+
           <View
             style={[
               styles.card,
@@ -436,6 +487,40 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 16,
     flexGrow: 1,
+  },
+  mediaHeaderCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 16,
+    padding: 14,
+    gap: 14,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  mediaCover: {
+    width: 64,
+    height: 64,
+    borderRadius: 10,
+  },
+  mediaCoverPlaceholder: {
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  mediaHeaderInfo: {
+    flex: 1,
+    gap: 4,
+  },
+  mediaTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  mediaArtist: {
+    fontSize: 13,
+    fontWeight: "500",
   },
   card: {
     borderRadius: 16,

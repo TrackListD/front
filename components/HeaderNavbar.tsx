@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter, Href } from "expo-router";
+import { Href, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   Image,
@@ -44,11 +44,6 @@ export default function HeaderNavbar() {
     }
   };
 
-  const handleProfile = () => {
-    setMenuVisible(false);
-    //router.push("/profile");
-  };
-
   return (
     <>
       <View style={styles.navbarContainer}>
@@ -80,6 +75,15 @@ export default function HeaderNavbar() {
 
         {/* Ações */}
         <View style={styles.actionsContainer}>
+          {/* NOVO: Botão de busca (Lupa) */}
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => router.push("/search" as Href)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="search-outline" size={22} color="#FFFFFF" />
+          </TouchableOpacity>
+
           <TouchableOpacity style={styles.iconButton}>
             <Ionicons name="settings-outline" size={22} color="#FFFFFF" />
           </TouchableOpacity>
@@ -101,7 +105,10 @@ export default function HeaderNavbar() {
           <View style={styles.menuContainer}>
             <TouchableOpacity
               style={styles.menuItem}
-              onPress={() => router.push("/profile/me" as Href)}
+              onPress={() => {
+                setMenuVisible(false);
+                router.push("/profile/me" as Href);
+              }}
             >
               <Ionicons name="person-outline" size={20} color="#FFFFFF" />
               <Text style={styles.menuText}>Meu Perfil</Text>

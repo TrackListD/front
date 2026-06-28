@@ -52,6 +52,10 @@ export default function RatingDetailScreen() {
         const response = await apiClient.get<RatingDetailResponse>(
           "/ratings/" + id,
         );
+        console.log(
+          "CONTEÚDO REAL DA API:",
+          JSON.stringify(response.data, null, 2),
+        );
         setRating(response.data);
       } catch (err) {
         setError(err as NormalizedError);
@@ -165,7 +169,25 @@ export default function RatingDetailScreen() {
 
   // 3. Normalizing access (discrimination helper)
   const isOwner = isOwnerResponse(rating);
-  const publicData: RatingResponseDto = isOwner ? rating.publicDto : rating;
+
+  // Alvo correto: Se existir "publicData" ou "publicDto" dentro do objeto retornado, usamos ele!
+  const publicData: RatingResponseDto = rating
+    ? (rating as any).publicData || (rating as any).publicDto || rating
+    : null;
+
+  // Verificação de segurança adicional para garantir que a mídia carregou
+  if (!publicData || !publicData.targetMedia) {
+    return (
+      <SafeAreaView
+        style={[styles.safeArea, { backgroundColor: themeStyles.background }]}
+      >
+        <Stack.Screen options={{ title: "Carregando Mídia..." }} />
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color={themeStyles.tintColor} />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView

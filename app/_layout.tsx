@@ -6,6 +6,9 @@ import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { initAuthListener } from "../src/auth/authState";
+
+initAuthListener();
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -13,11 +16,18 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <Stack>
+        {/* Telas base */}
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="login" options={{ headerShown: false }} />
+        
+        {/* Rotas de Avaliações */}
         <Stack.Screen name="ratings/create" />
         <Stack.Screen name="ratings/[id]" />
         <Stack.Screen name="ratings/user/[userId]" />
+
+
+        <Stack.Screen name="feed" options={{ headerShown: false }} />
+        <Stack.Screen name="profile" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>

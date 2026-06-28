@@ -8,6 +8,7 @@ type PostCardProps = {
   item: FeedItem;
   onToggleLike: (postId: number) => void;
   onFollow: (authorId: number) => void;
+  onReport: (postId: number, authorId: number) => void;
 };
 
 const defaultAvatar =
@@ -48,6 +49,7 @@ export default function PostCard({
   item,
   onToggleLike,
   onFollow,
+  onReport,
 }: PostCardProps) {
   const router = useRouter();
 
@@ -241,6 +243,13 @@ export default function PostCard({
         <TouchableOpacity style={styles.actionButton}>
           <Ionicons name="share-social-outline" size={19} color="#8A8A8F" />
         </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={[styles.actionButton, { marginLeft: "auto", marginRight: 0 }]}
+          onPress={() => onReport(item.id, item.author.id)}
+        >
+          <Ionicons name="flag-outline" size={18} color="#8A8A8F" />
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -400,4 +409,6 @@ const styles = StyleSheet.create({
   interactionsContainer: { flexDirection: "row", alignItems: "center" },
   actionButton: { flexDirection: "row", alignItems: "center", marginRight: 28 },
   actionText: { color: "#8A8A8F", fontSize: 14, marginLeft: 6 },
+
+  
 });

@@ -21,6 +21,18 @@ export default function RootLayout() {
         <Stack.Screen name="login" />
         <Stack.Screen name="feed" />
         <Stack.Screen name="profile" />
+        <Stack.Screen 
+          name="reportModal" 
+          options={{ 
+            presentation: "modal", 
+            headerShown: true, 
+            title: "Denúncia",
+            headerStyle: { 
+              backgroundColor: colorScheme === "dark" ? "#121212" : "#fff" 
+            },
+            headerTintColor: colorScheme === "dark" ? "#fff" : "#000",
+          }} 
+        />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>

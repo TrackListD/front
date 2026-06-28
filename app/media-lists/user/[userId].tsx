@@ -1,21 +1,24 @@
-// Tela: Perfil e Listas do Usuário — Consome /api/users/me e /api/mediaList/user/{userId}
-import React, { useState, useEffect } from "react";
+// Tela: Perfil e Listas do Usuário — Consome /users/me e /mediaList/user/{userId}
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import apiClient, { NormalizedError } from "@/src/service/api";
 import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
+  MediaListOwnerResponseDto,
+  MediaListResponseDto,
+} from "@/src/types/mediaList";
+import { UserPerfilResponseDTO } from "@/src/types/user";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { Href, router, Stack, useLocalSearchParams } from "expo-router";
+import React, { useEffect, useState } from "react";
+import {
   ActivityIndicator,
+  Alert,
+  FlatList,
   Pressable,
   SafeAreaView,
-  Alert,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
-import { Stack, useLocalSearchParams, router, Href } from "expo-router";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import apiClient, { NormalizedError } from "@/src/service/apiClient";
-import { UserPerfilResponseDTO } from "@/src/types/user";
-import { MediaListResponseDto, MediaListOwnerResponseDto } from "@/src/types/mediaList";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
 type TabOption = "Todas" | "Favoritas";
 
@@ -26,7 +29,9 @@ export default function UserProfileListsScreen() {
 
   // States
   const [profile, setProfile] = useState<UserPerfilResponseDTO | null>(null);
-  const [mediaLists, setMediaLists] = useState<(MediaListResponseDto | MediaListOwnerResponseDto)[]>([]);
+  const [mediaLists, setMediaLists] = useState<
+    (MediaListResponseDto | MediaListOwnerResponseDto)[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<NormalizedError | null>(null);
   const [activeTab, setActiveTab] = useState<TabOption>("Todas");
@@ -55,20 +60,23 @@ export default function UserProfileListsScreen() {
       let userProfile: UserPerfilResponseDTO;
 
       if (userId === "me") {
-        const profileRes = await apiClient.get<UserPerfilResponseDTO>("/api/users/me");
+        const profileRes =
+          await apiClient.get<UserPerfilResponseDTO>("/users/me");
         userProfile = profileRes.data;
         targetIdNum = profileRes.data.id;
       } else {
-        const profileRes = await apiClient.get<UserPerfilResponseDTO>(`/api/users/${userId}`);
+        const profileRes = await apiClient.get<UserPerfilResponseDTO>(
+          `/users/${userId}`,
+        );
         userProfile = profileRes.data;
         targetIdNum = Number(userId);
       }
 
       setProfile(userProfile);
 
-      const listsRes = await apiClient.get<(MediaListResponseDto | MediaListOwnerResponseDto)[]>(
-        `/api/mediaList/user/${targetIdNum}`
-      );
+      const listsRes = await apiClient.get<
+        (MediaListResponseDto | MediaListOwnerResponseDto)[]
+      >(`/mediaList/user/${targetIdNum}`);
       setMediaLists(listsRes.data);
     } catch (err) {
       setError(err as NormalizedError);
@@ -83,7 +91,9 @@ export default function UserProfileListsScreen() {
     }
   }, [userId]);
 
-  const getListData = (list: MediaListResponseDto | MediaListOwnerResponseDto): MediaListResponseDto => {
+  const getListData = (
+    list: MediaListResponseDto | MediaListOwnerResponseDto,
+  ): MediaListResponseDto => {
     return "publicData" in list ? list.publicData : list;
   };
 
@@ -100,16 +110,28 @@ export default function UserProfileListsScreen() {
   const renderProfileHeader = () => {
     if (!profile) return null;
     return (
-      <View style={[styles.profileCard, { backgroundColor: themeStyles.cardBackground, borderColor: themeStyles.border }]}>
+      <View
+        style={[
+          styles.profileCard,
+          {
+            backgroundColor: themeStyles.cardBackground,
+            borderColor: themeStyles.border,
+          },
+        ]}
+      >
         <View style={styles.profileMain}>
-          <View style={[styles.avatar, { backgroundColor: themeStyles.avatarBg }]}>
+          <View
+            style={[styles.avatar, { backgroundColor: themeStyles.avatarBg }]}
+          >
             <Text style={[styles.avatarText, { color: themeStyles.textColor }]}>
               {profile.name ? profile.name.charAt(0).toUpperCase() : "U"}
             </Text>
           </View>
 
           <View style={styles.profileInfo}>
-            <Text style={[styles.profileName, { color: themeStyles.textColor }]}>
+            <Text
+              style={[styles.profileName, { color: themeStyles.textColor }]}
+            >
               {profile.name}
             </Text>
             {/* DEBITO TECNICO: Backend não retorna quantidade de seguidores e total de listas. Mockado conforme protótipo. */}
@@ -121,7 +143,10 @@ export default function UserProfileListsScreen() {
           <Pressable
             onPress={() => {
               // FUTURA INTEGRAÇÃO: Navegar para a tela de edição de perfil.
-              Alert.alert("Editar Perfil", "Navegação para edição de perfil (FUTURO).");
+              Alert.alert(
+                "Editar Perfil",
+                "Navegação para edição de perfil (FUTURO).",
+              );
             }}
             style={({ pressed }) => [
               styles.editProfileButton,
@@ -129,7 +154,11 @@ export default function UserProfileListsScreen() {
               pressed && styles.pressed,
             ]}
           >
-            <MaterialIcons name="edit" size={20} color={themeStyles.textColor} />
+            <MaterialIcons
+              name="edit"
+              size={20}
+              color={themeStyles.textColor}
+            />
           </Pressable>
         </View>
 
@@ -153,7 +182,9 @@ export default function UserProfileListsScreen() {
             style={[
               styles.tabPill,
               {
-                backgroundColor: isActive ? themeStyles.pillActiveBg : themeStyles.pillInactiveBg,
+                backgroundColor: isActive
+                  ? themeStyles.pillActiveBg
+                  : themeStyles.pillInactiveBg,
               },
             ]}
           >
@@ -171,13 +202,22 @@ export default function UserProfileListsScreen() {
     </View>
   );
 
-  const renderMediaListCard = ({ item }: { item: MediaListResponseDto | MediaListOwnerResponseDto }) => {
-    const listId = 'publicData' in item ? item.publicData.id : item.id;
+  const renderMediaListCard = ({
+    item,
+  }: {
+    item: MediaListResponseDto | MediaListOwnerResponseDto;
+  }) => {
+    const listId = "publicData" in item ? item.publicData.id : item.id;
     const data = getListData(item);
     const mediaCount = data.medias ? data.medias.length : 0;
-    const mediaTypeLabel = data.typeOfList === "ALBUM"
-      ? mediaCount === 1 ? "álbum" : "álbuns"
-      : mediaCount === 1 ? "música" : "músicas";
+    const mediaTypeLabel =
+      data.typeOfList === "ALBUM"
+        ? mediaCount === 1
+          ? "álbum"
+          : "álbuns"
+        : mediaCount === 1
+          ? "música"
+          : "músicas";
 
     return (
       <Pressable
@@ -189,12 +229,15 @@ export default function UserProfileListsScreen() {
         ]}
       >
         {/* DEBITO TECNICO: Capas de mídias ausentes no backend. Usando fundo escuro. */}
-        
+
         {/* Botão de 3 pontinhos */}
         <Pressable
           onPress={(e) => {
             e.stopPropagation();
-            Alert.alert("Opções da Lista", `Configurações adicionais para a lista "${data.listName}" (FUTURO).`);
+            Alert.alert(
+              "Opções da Lista",
+              `Configurações adicionais para a lista "${data.listName}" (FUTURO).`,
+            );
           }}
           style={styles.moreButton}
         >
@@ -208,7 +251,12 @@ export default function UserProfileListsScreen() {
 
           <View style={styles.cardFooter}>
             <View style={styles.authorRow}>
-              <MaterialIcons name="account-circle" size={16} color="#FFFFFF" style={styles.authorIcon} />
+              <MaterialIcons
+                name="account-circle"
+                size={16}
+                color="#FFFFFF"
+                style={styles.authorIcon}
+              />
               <Text style={styles.authorText}>
                 Por {data.authorName || "Usuário"}
               </Text>
@@ -224,7 +272,12 @@ export default function UserProfileListsScreen() {
 
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
-      <MaterialIcons name="library-music" size={48} color={themeStyles.subText} style={styles.emptyIcon} />
+      <MaterialIcons
+        name="library-music"
+        size={48}
+        color={themeStyles.subText}
+        style={styles.emptyIcon}
+      />
       <Text style={[styles.emptyText, { color: themeStyles.subText }]}>
         Nenhuma lista de mídias encontrada nesta aba.
       </Text>
@@ -232,7 +285,9 @@ export default function UserProfileListsScreen() {
   );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: themeStyles.background }]}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: themeStyles.background }]}
+    >
       <Stack.Screen
         options={{
           title: "Perfil",
@@ -248,8 +303,20 @@ export default function UserProfileListsScreen() {
         </View>
       ) : error ? (
         <View style={styles.centerContainer}>
-          <View style={[styles.errorCard, { backgroundColor: themeStyles.errorBg, borderColor: themeStyles.errorText }]}>
-            <MaterialIcons name="error-outline" size={40} color={themeStyles.errorText} />
+          <View
+            style={[
+              styles.errorCard,
+              {
+                backgroundColor: themeStyles.errorBg,
+                borderColor: themeStyles.errorText,
+              },
+            ]}
+          >
+            <MaterialIcons
+              name="error-outline"
+              size={40}
+              color={themeStyles.errorText}
+            />
             <Text style={[styles.errorTitle, { color: themeStyles.errorText }]}>
               Erro de Conexão
             </Text>
@@ -257,7 +324,10 @@ export default function UserProfileListsScreen() {
               {error.message || "Erro ao carregar o perfil do usuário."}
             </Text>
             <Pressable
-              style={[styles.retryButton, { backgroundColor: themeStyles.tintColor }]}
+              style={[
+                styles.retryButton,
+                { backgroundColor: themeStyles.tintColor },
+              ]}
               onPress={fetchData}
             >
               <Text style={styles.retryButtonText}>Tentar Novamente</Text>

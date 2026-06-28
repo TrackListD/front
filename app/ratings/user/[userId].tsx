@@ -1,25 +1,24 @@
 // Tela: Lista de Avaliações por Usuário — exibe todas as avaliações públicas de um usuário específico.
 
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  FlatList,
-  ActivityIndicator,
-  Pressable,
-  SafeAreaView,
-  Image,
-} from "react-native";
-import { Stack, useLocalSearchParams, router, Href } from "expo-router";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import apiClient, { NormalizedError } from "@/src/service/apiClient";
 import { StarRating } from "@/src/components/StarRating";
+import apiClient, { NormalizedError } from "@/src/service/api";
 import { RatingResponseDto } from "@/src/types/rating";
 import { UserPerfilResponseDTO } from "@/src/types/user";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { formatDateBR } from "@/src/utils/dateUtils";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { Href, router, Stack, useLocalSearchParams } from "expo-router";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  FlatList,
+  Image,
+  Pressable,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
 export default function UserRatingsScreen() {
   const { userId } = useLocalSearchParams<{ userId: string }>();
@@ -41,10 +40,13 @@ export default function UserRatingsScreen() {
     try {
       let actualUserId = targetUserId;
       if (targetUserId === "me") {
-        const profileRes = await apiClient.get<UserPerfilResponseDTO>("/api/users/me");
+        const profileRes =
+          await apiClient.get<UserPerfilResponseDTO>("/users/me");
         actualUserId = String(profileRes.data.id);
       }
-      const response = await apiClient.get<RatingResponseDto[]>("/api/ratings/user/" + actualUserId);
+      const response = await apiClient.get<RatingResponseDto[]>(
+        "/api/ratings/user/" + actualUserId,
+      );
       setRatings(response.data);
     } catch (err) {
       setError(err as NormalizedError);
@@ -64,7 +66,7 @@ export default function UserRatingsScreen() {
   const handleSearch = () => {
     const trimmed = searchInput.trim();
     if (!trimmed) return;
-    router.replace((`/ratings/user/${trimmed}`) as Href);
+    router.replace(`/ratings/user/${trimmed}` as Href);
   };
 
   const themeStyles = {
@@ -78,10 +80,10 @@ export default function UserRatingsScreen() {
     starColor: "#FFC107",
   };
 
-
-
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: themeStyles.background }]}>
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: themeStyles.background }]}
+    >
       <Stack.Screen
         options={{
           title: "Avaliações do Usuário",
@@ -94,7 +96,6 @@ export default function UserRatingsScreen() {
       />
 
       <View style={styles.container}>
-
         {/* Loading Indicator */}
         {loading && (
           <View style={styles.centerContainer}>
@@ -105,14 +106,20 @@ export default function UserRatingsScreen() {
         {/* Error State */}
         {!loading && error && (
           <View style={styles.centerContainer}>
-            <Text style={[styles.errorText, { color: "#EF4444" }]}>{error.message}</Text>
+            <Text style={[styles.errorText, { color: "#EF4444" }]}>
+              {error.message}
+            </Text>
           </View>
         )}
 
         {/* Empty List State */}
         {!loading && !error && ratings.length === 0 && (
           <View style={styles.centerContainer}>
-            <MaterialIcons name="rate-review" size={48} color={themeStyles.subText} />
+            <MaterialIcons
+              name="rate-review"
+              size={48}
+              color={themeStyles.subText}
+            />
             <Text style={[styles.emptyText, { color: themeStyles.subText }]}>
               Nenhuma avaliação encontrada
             </Text>
@@ -127,7 +134,7 @@ export default function UserRatingsScreen() {
             contentContainerStyle={styles.listContent}
             renderItem={({ item }) => (
               <Pressable
-                onPress={() => router.push((`/ratings/${item.id}`) as Href)}
+                onPress={() => router.push(`/ratings/${item.id}` as Href)}
                 style={({ pressed }) => [
                   styles.ratingCard,
                   {
@@ -138,7 +145,14 @@ export default function UserRatingsScreen() {
                 ]}
               >
                 <View style={styles.cardHeader}>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 12, flex: 1 }}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 12,
+                      flex: 1,
+                    }}
+                  >
                     {item.targetMedia?.coverUrl ? (
                       <Image
                         source={{ uri: item.targetMedia.coverUrl }}
@@ -156,25 +170,47 @@ export default function UserRatingsScreen() {
                         }}
                       >
                         <MaterialIcons
-                          name={item.targetMedia?.type === "ALBUM" ? "album" : "music-note"}
+                          name={
+                            item.targetMedia?.type === "ALBUM"
+                              ? "album"
+                              : "music-note"
+                          }
                           size={24}
                           color={themeStyles.tintColor}
                         />
                       </View>
                     )}
                     <View style={{ flex: 1 }}>
-                      <Text style={[styles.targetName, { color: themeStyles.textColor }]} numberOfLines={1}>
+                      <Text
+                        style={[
+                          styles.targetName,
+                          { color: themeStyles.textColor },
+                        ]}
+                        numberOfLines={1}
+                      >
                         {item.targetMedia?.title}
                       </Text>
-                      <Text style={{ fontSize: 13, color: themeStyles.subText }} numberOfLines={1}>
+                      <Text
+                        style={{ fontSize: 13, color: themeStyles.subText }}
+                        numberOfLines={1}
+                      >
                         {item.targetMedia?.artist}
                       </Text>
-                      <Text style={[styles.dateText, { color: themeStyles.subText, marginTop: 2 }]}>
+                      <Text
+                        style={[
+                          styles.dateText,
+                          { color: themeStyles.subText, marginTop: 2 },
+                        ]}
+                      >
                         {formatDateBR(item.publicationDate)}
                       </Text>
                     </View>
                   </View>
-                  <MaterialIcons name="chevron-right" size={24} color={themeStyles.subText} />
+                  <MaterialIcons
+                    name="chevron-right"
+                    size={24}
+                    color={themeStyles.subText}
+                  />
                 </View>
 
                 <View style={styles.ratingRow}>
@@ -185,17 +221,34 @@ export default function UserRatingsScreen() {
                     filledColor={themeStyles.starColor}
                     emptyColor={themeStyles.subText}
                   />
-                  <Text style={[styles.ratingNoteText, { color: themeStyles.textColor }]}>
+                  <Text
+                    style={[
+                      styles.ratingNoteText,
+                      { color: themeStyles.textColor },
+                    ]}
+                  >
                     {item.ratingNote.toFixed(1)}
                   </Text>
                 </View>
 
                 {item.review ? (
-                  <Text style={[styles.reviewSnippet, { color: themeStyles.textColor }]} numberOfLines={2}>
+                  <Text
+                    style={[
+                      styles.reviewSnippet,
+                      { color: themeStyles.textColor },
+                    ]}
+                    numberOfLines={2}
+                  >
                     {item.review}
                   </Text>
                 ) : (
-                  <Text style={[styles.reviewSnippet, styles.noReviewText, { color: themeStyles.subText }]}>
+                  <Text
+                    style={[
+                      styles.reviewSnippet,
+                      styles.noReviewText,
+                      { color: themeStyles.subText },
+                    ]}
+                  >
                     Sem opinião escrita.
                   </Text>
                 )}

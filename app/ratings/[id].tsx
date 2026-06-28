@@ -1,30 +1,30 @@
 // Tela: Detalhe de Avaliação — exibe os dados completos de uma avaliação, com variação para dono e público.
 
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  ActivityIndicator,
-  Pressable,
-  SafeAreaView,
-  Image,
-} from "react-native";
-import { Stack, useLocalSearchParams, router, Href } from "expo-router";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import apiClient, { NormalizedError } from "@/src/service/apiClient";
+import EditNoteModal from "@/src/components/EditNoteModal";
+import EditPrivacyModal from "@/src/components/EditPrivacyModal";
+import EditReviewModal from "@/src/components/EditReviewModal";
 import { StarRating } from "@/src/components/StarRating";
+import apiClient, { NormalizedError } from "@/src/service/api";
 import {
   RatingDetailResponse,
   RatingResponseDto,
   isOwnerResponse,
 } from "@/src/types/rating";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { formatDateBR } from "@/src/utils/dateUtils";
-import EditReviewModal from "@/src/components/EditReviewModal";
-import EditNoteModal from "@/src/components/EditNoteModal";
-import EditPrivacyModal from "@/src/components/EditPrivacyModal";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { Href, Stack, router, useLocalSearchParams } from "expo-router";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Image,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
 export default function RatingDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -44,12 +44,14 @@ export default function RatingDetailScreen() {
   useEffect(() => {
     const fetchRatingDetail = async () => {
       if (!id) return;
-      
+
       setLoading(true);
       setError(null);
-      
+
       try {
-        const response = await apiClient.get<RatingDetailResponse>("/api/ratings/" + id);
+        const response = await apiClient.get<RatingDetailResponse>(
+          "/ratings/" + id,
+        );
         setRating(response.data);
       } catch (err) {
         setError(err as NormalizedError);
@@ -77,8 +79,6 @@ export default function RatingDetailScreen() {
     avatarBg: isDark ? "#334155" : "#E2E8F0",
   };
 
-
-
   const translateStatus = (status: string) => {
     switch (status) {
       case "ACTIVE":
@@ -94,7 +94,9 @@ export default function RatingDetailScreen() {
     }
   };
 
-  const translatePrivacy = (privacy: string): { label: string; icon: "public" | "people" | "lock" | "visibility" } => {
+  const translatePrivacy = (
+    privacy: string,
+  ): { label: string; icon: "public" | "people" | "lock" | "visibility" } => {
     switch (privacy) {
       case "PUBLIC":
         return { label: "Público", icon: "public" };
@@ -110,7 +112,9 @@ export default function RatingDetailScreen() {
   // 1. Loading State
   if (loading) {
     return (
-      <SafeAreaView style={[styles.safeArea, { backgroundColor: themeStyles.background }]}>
+      <SafeAreaView
+        style={[styles.safeArea, { backgroundColor: themeStyles.background }]}
+      >
         <Stack.Screen options={{ title: "Carregando..." }} />
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={themeStyles.tintColor} />
@@ -124,10 +128,13 @@ export default function RatingDetailScreen() {
     const is404 = error?.status === 404;
     const errorMessage = is404
       ? "Avaliação não encontrada"
-      : error?.message || "Ocorreu um erro ao carregar os detalhes da avaliação.";
+      : error?.message ||
+        "Ocorreu um erro ao carregar os detalhes da avaliação.";
 
     return (
-      <SafeAreaView style={[styles.safeArea, { backgroundColor: themeStyles.background }]}>
+      <SafeAreaView
+        style={[styles.safeArea, { backgroundColor: themeStyles.background }]}
+      >
         <Stack.Screen options={{ title: "Erro" }} />
         <View style={styles.centerContainer}>
           <View
@@ -161,7 +168,9 @@ export default function RatingDetailScreen() {
   const publicData: RatingResponseDto = isOwner ? rating.publicDto : rating;
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: themeStyles.background }]}>
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: themeStyles.background }]}
+    >
       <Stack.Screen
         options={{
           title: "Detalhe da Avaliação",
@@ -174,20 +183,31 @@ export default function RatingDetailScreen() {
       />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        
         {/* Main Details Card */}
-        <View style={[styles.card, { backgroundColor: themeStyles.cardBackground }]}>
-          
+        <View
+          style={[styles.card, { backgroundColor: themeStyles.cardBackground }]}
+        >
           {/* Header Row: Author Info */}
           <View style={styles.authorHeader}>
             <View style={styles.authorMeta}>
-              <View style={[styles.avatar, { backgroundColor: themeStyles.avatarBg }]}>
-                <Text style={[styles.avatarText, { color: themeStyles.textColor }]}>
-                  {publicData.authorName ? publicData.authorName.charAt(0).toUpperCase() : "?"}
+              <View
+                style={[
+                  styles.avatar,
+                  { backgroundColor: themeStyles.avatarBg },
+                ]}
+              >
+                <Text
+                  style={[styles.avatarText, { color: themeStyles.textColor }]}
+                >
+                  {publicData.authorName
+                    ? publicData.authorName.charAt(0).toUpperCase()
+                    : "?"}
                 </Text>
               </View>
               <View>
-                <Text style={[styles.authorName, { color: themeStyles.textColor }]}>
+                <Text
+                  style={[styles.authorName, { color: themeStyles.textColor }]}
+                >
                   {publicData.authorName}
                 </Text>
                 <Text style={[styles.dateText, { color: themeStyles.subText }]}>
@@ -201,10 +221,18 @@ export default function RatingDetailScreen() {
               <View
                 style={[
                   styles.statusBadge,
-                  { backgroundColor: translateStatus(rating.status).color + "15" },
+                  {
+                    backgroundColor:
+                      translateStatus(rating.status).color + "15",
+                  },
                 ]}
               >
-                <Text style={[styles.statusText, { color: translateStatus(rating.status).color }]}>
+                <Text
+                  style={[
+                    styles.statusText,
+                    { color: translateStatus(rating.status).color },
+                  ]}
+                >
                   {translateStatus(rating.status).label}
                 </Text>
               </View>
@@ -212,12 +240,23 @@ export default function RatingDetailScreen() {
           </View>
 
           {/* Divider */}
-          <View style={[styles.divider, { backgroundColor: themeStyles.border }]} />
+          <View
+            style={[styles.divider, { backgroundColor: themeStyles.border }]}
+          />
 
           {/* Target Name (Media title) */}
           <View style={styles.sectionContainer}>
-            <Text style={[styles.sectionLabel, { color: themeStyles.subText }]}>Mídia Avaliada</Text>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginTop: 8 }}>
+            <Text style={[styles.sectionLabel, { color: themeStyles.subText }]}>
+              Mídia Avaliada
+            </Text>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 12,
+                marginTop: 8,
+              }}
+            >
               {publicData.targetMedia.coverUrl ? (
                 <Image
                   source={{ uri: publicData.targetMedia.coverUrl }}
@@ -235,20 +274,39 @@ export default function RatingDetailScreen() {
                   }}
                 >
                   <MaterialIcons
-                    name={publicData.targetMedia.type === "ALBUM" ? "album" : "music-note"}
+                    name={
+                      publicData.targetMedia.type === "ALBUM"
+                        ? "album"
+                        : "music-note"
+                    }
                     size={28}
                     color={themeStyles.tintColor}
                   />
                 </View>
               )}
               <View style={{ flex: 1 }}>
-                <Text style={[styles.targetTitle, { color: themeStyles.textColor }]} numberOfLines={2}>
+                <Text
+                  style={[styles.targetTitle, { color: themeStyles.textColor }]}
+                  numberOfLines={2}
+                >
                   {publicData.targetMedia.title}
                 </Text>
-                <Text style={{ fontSize: 14, color: themeStyles.subText, marginTop: 2 }}>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    color: themeStyles.subText,
+                    marginTop: 2,
+                  }}
+                >
                   {publicData.targetMedia.artist}
                 </Text>
-                <Text style={{ fontSize: 12, color: themeStyles.subText, marginTop: 1 }}>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: themeStyles.subText,
+                    marginTop: 1,
+                  }}
+                >
                   Duração: {publicData.targetMedia.formattedDuration}
                 </Text>
               </View>
@@ -257,7 +315,9 @@ export default function RatingDetailScreen() {
 
           {/* Rating note */}
           <View style={styles.sectionContainer}>
-            <Text style={[styles.sectionLabel, { color: themeStyles.subText }]}>Nota</Text>
+            <Text style={[styles.sectionLabel, { color: themeStyles.subText }]}>
+              Nota
+            </Text>
             <View style={styles.ratingRow}>
               <StarRating
                 rating={publicData.ratingNote}
@@ -266,17 +326,29 @@ export default function RatingDetailScreen() {
                 filledColor={themeStyles.starColor}
                 emptyColor={themeStyles.subText}
               />
-              <Text style={[styles.ratingValueText, { color: themeStyles.textColor }]}>
+              <Text
+                style={[
+                  styles.ratingValueText,
+                  { color: themeStyles.textColor },
+                ]}
+              >
                 {publicData.ratingNote.toFixed(1)} / 5.0
               </Text>
-              
+
               {/* If Owner: Pencil icon to edit note */}
               {isOwner && (
                 <Pressable
-                  style={({ pressed }) => [styles.editIcon, pressed && styles.pressed]}
+                  style={({ pressed }) => [
+                    styles.editIcon,
+                    pressed && styles.pressed,
+                  ]}
                   onPress={() => setShowEditNote(true)}
                 >
-                  <MaterialIcons name="edit" size={18} color={themeStyles.tintColor} />
+                  <MaterialIcons
+                    name="edit"
+                    size={18}
+                    color={themeStyles.tintColor}
+                  />
                 </Pressable>
               )}
             </View>
@@ -285,15 +357,26 @@ export default function RatingDetailScreen() {
           {/* Review text */}
           <View style={styles.sectionContainer}>
             <View style={styles.rowJustify}>
-              <Text style={[styles.sectionLabel, { color: themeStyles.subText }]}>Resenha</Text>
-              
+              <Text
+                style={[styles.sectionLabel, { color: themeStyles.subText }]}
+              >
+                Resenha
+              </Text>
+
               {/* If Owner: Pencil icon to edit review text */}
               {isOwner && (
                 <Pressable
-                  style={({ pressed }) => [styles.editIcon, pressed && styles.pressed]}
+                  style={({ pressed }) => [
+                    styles.editIcon,
+                    pressed && styles.pressed,
+                  ]}
                   onPress={() => setShowEditReview(true)}
                 >
-                  <MaterialIcons name="edit" size={18} color={themeStyles.tintColor} />
+                  <MaterialIcons
+                    name="edit"
+                    size={18}
+                    color={themeStyles.tintColor}
+                  />
                 </Pressable>
               )}
             </View>
@@ -306,7 +389,9 @@ export default function RatingDetailScreen() {
                 },
               ]}
             >
-              <Text style={[styles.reviewText, { color: themeStyles.textColor }]}>
+              <Text
+                style={[styles.reviewText, { color: themeStyles.textColor }]}
+              >
                 {publicData.review || "Sem opinião escrita para esta mídia."}
               </Text>
             </View>
@@ -315,54 +400,105 @@ export default function RatingDetailScreen() {
           {/* If Owner: Privacy Info block */}
           {isOwner && (
             <View style={styles.sectionContainer}>
-              <Text style={[styles.sectionLabel, { color: themeStyles.subText }]}>Privacidade</Text>
+              <Text
+                style={[styles.sectionLabel, { color: themeStyles.subText }]}
+              >
+                Privacidade
+              </Text>
               <View style={styles.privacyRow}>
-                <View style={[styles.privacyBadge, { backgroundColor: themeStyles.badgeBg }]}>
+                <View
+                  style={[
+                    styles.privacyBadge,
+                    { backgroundColor: themeStyles.badgeBg },
+                  ]}
+                >
                   <MaterialIcons
                     name={translatePrivacy(rating.whoCanSee).icon}
                     size={16}
                     color={themeStyles.textColor}
                     style={styles.privacyIcon}
                   />
-                  <Text style={[styles.privacyText, { color: themeStyles.textColor }]}>
+                  <Text
+                    style={[
+                      styles.privacyText,
+                      { color: themeStyles.textColor },
+                    ]}
+                  >
                     {translatePrivacy(rating.whoCanSee).label}
                   </Text>
                 </View>
 
                 <Pressable
-                  style={({ pressed }) => [styles.editIcon, pressed && styles.pressed]}
+                  style={({ pressed }) => [
+                    styles.editIcon,
+                    pressed && styles.pressed,
+                  ]}
                   onPress={() => setShowEditPrivacy(true)}
                 >
-                  <MaterialIcons name="edit" size={18} color={themeStyles.tintColor} />
+                  <MaterialIcons
+                    name="edit"
+                    size={18}
+                    color={themeStyles.tintColor}
+                  />
                 </Pressable>
               </View>
             </View>
           )}
 
           {/* Interaction counters (Likes / Comments) */}
-          <View style={[styles.divider, { backgroundColor: themeStyles.border }]} />
-          
+          <View
+            style={[styles.divider, { backgroundColor: themeStyles.border }]}
+          />
+
           <View style={styles.interactionRow}>
             <View style={styles.interactionItem}>
-              <MaterialIcons name="thumb-up-off-alt" size={20} color={themeStyles.subText} />
-              <Text style={[styles.interactionText, { color: themeStyles.textColor }]}>
-                {publicData.likeCount} {publicData.likeCount === 1 ? "Curtida" : "Curtidas"}
+              <MaterialIcons
+                name="thumb-up-off-alt"
+                size={20}
+                color={themeStyles.subText}
+              />
+              <Text
+                style={[
+                  styles.interactionText,
+                  { color: themeStyles.textColor },
+                ]}
+              >
+                {publicData.likeCount}{" "}
+                {publicData.likeCount === 1 ? "Curtida" : "Curtidas"}
               </Text>
             </View>
             <View style={styles.interactionItem}>
-              <MaterialIcons name="chat-bubble-outline" size={20} color={themeStyles.subText} />
-              <Text style={[styles.interactionText, { color: themeStyles.textColor }]}>
-                {publicData.commentCount} {publicData.commentCount === 1 ? "Comentário" : "Comentários"}
+              <MaterialIcons
+                name="chat-bubble-outline"
+                size={20}
+                color={themeStyles.subText}
+              />
+              <Text
+                style={[
+                  styles.interactionText,
+                  { color: themeStyles.textColor },
+                ]}
+              >
+                {publicData.commentCount}{" "}
+                {publicData.commentCount === 1 ? "Comentário" : "Comentários"}
               </Text>
             </View>
           </View>
-
         </View>
 
         {/* Comments placeholder card */}
-        <View style={[styles.card, { backgroundColor: themeStyles.cardBackground, marginTop: 16 }]}>
-          <Text style={[styles.commentsTitle, { color: themeStyles.textColor }]}>Comentários</Text>
-          
+        <View
+          style={[
+            styles.card,
+            { backgroundColor: themeStyles.cardBackground, marginTop: 16 },
+          ]}
+        >
+          <Text
+            style={[styles.commentsTitle, { color: themeStyles.textColor }]}
+          >
+            Comentários
+          </Text>
+
           <Pressable
             onPress={() => {
               router.push(`/comments/post/${publicData.id}` as Href);
@@ -377,15 +513,27 @@ export default function RatingDetailScreen() {
             ]}
           >
             <View style={styles.commentsButtonLeft}>
-              <MaterialIcons name="forum" size={20} color={themeStyles.tintColor} />
-              <Text style={[styles.commentsButtonText, { color: themeStyles.textColor }]}>
+              <MaterialIcons
+                name="forum"
+                size={20}
+                color={themeStyles.tintColor}
+              />
+              <Text
+                style={[
+                  styles.commentsButtonText,
+                  { color: themeStyles.textColor },
+                ]}
+              >
                 Ver todos os comentários ({publicData.commentCount})
               </Text>
             </View>
-            <MaterialIcons name="chevron-right" size={24} color={themeStyles.subText} />
+            <MaterialIcons
+              name="chevron-right"
+              size={24}
+              color={themeStyles.subText}
+            />
           </Pressable>
         </View>
-
       </ScrollView>
 
       {isOwner && (

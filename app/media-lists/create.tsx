@@ -1,22 +1,26 @@
 // Tela: Criar Nova Lista — formulário Frontend-First para POST /api/mediaList
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import apiClient, { NormalizedError } from "@/src/service/api";
+import {
+  ListType,
+  MediaListOwnerResponseDto,
+  Privacy,
+} from "@/src/types/mediaList";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { Href, Stack, router } from "expo-router";
 import React, { useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  Pressable,
   ActivityIndicator,
-  SafeAreaView,
-  ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
-import { Stack, router, Href } from "expo-router";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import apiClient, { NormalizedError } from "@/src/service/apiClient";
-import { ListType, Privacy, MediaListOwnerResponseDto } from "@/src/types/mediaList";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
 export default function CreateMediaListScreen() {
   const colorScheme = useColorScheme();
@@ -71,7 +75,10 @@ export default function CreateMediaListScreen() {
     };
 
     try {
-      const response = await apiClient.post<MediaListOwnerResponseDto>("/api/mediaList", payload);
+      const response = await apiClient.post<MediaListOwnerResponseDto>(
+        "/api/mediaList",
+        payload,
+      );
 
       router.replace(`/media-lists/${response.data.publicData.id}` as Href);
     } catch (err) {
@@ -82,7 +89,11 @@ export default function CreateMediaListScreen() {
     }
   };
 
-  const renderPrivacyOption = (value: Privacy, label: string, icon: "public" | "people" | "lock") => {
+  const renderPrivacyOption = (
+    value: Privacy,
+    label: string,
+    icon: "public" | "people" | "lock",
+  ) => {
     const isSelected = whoCanSee === value;
     return (
       <Pressable
@@ -91,16 +102,26 @@ export default function CreateMediaListScreen() {
         style={[
           styles.selectorButton,
           {
-            borderColor: isSelected ? themeStyles.tintColor : themeStyles.border,
-            backgroundColor: isSelected ? themeStyles.selectedBg : themeStyles.cardBackground,
+            borderColor: isSelected
+              ? themeStyles.tintColor
+              : themeStyles.border,
+            backgroundColor: isSelected
+              ? themeStyles.selectedBg
+              : themeStyles.cardBackground,
           },
         ]}
       >
-        <MaterialIcons name={icon} size={18} color={isSelected ? themeStyles.tintColor : themeStyles.subText} />
+        <MaterialIcons
+          name={icon}
+          size={18}
+          color={isSelected ? themeStyles.tintColor : themeStyles.subText}
+        />
         <Text
           style={[
             styles.selectorButtonText,
-            { color: isSelected ? themeStyles.tintColor : themeStyles.textColor },
+            {
+              color: isSelected ? themeStyles.tintColor : themeStyles.textColor,
+            },
           ]}
         >
           {label}
@@ -109,7 +130,11 @@ export default function CreateMediaListScreen() {
     );
   };
 
-  const renderTypeOption = (value: ListType, label: string, icon: "album" | "music-note") => {
+  const renderTypeOption = (
+    value: ListType,
+    label: string,
+    icon: "album" | "music-note",
+  ) => {
     const isSelected = typeOfList === value;
     return (
       <Pressable
@@ -118,16 +143,26 @@ export default function CreateMediaListScreen() {
         style={[
           styles.selectorButton,
           {
-            borderColor: isSelected ? themeStyles.tintColor : themeStyles.border,
-            backgroundColor: isSelected ? themeStyles.selectedBg : themeStyles.cardBackground,
+            borderColor: isSelected
+              ? themeStyles.tintColor
+              : themeStyles.border,
+            backgroundColor: isSelected
+              ? themeStyles.selectedBg
+              : themeStyles.cardBackground,
           },
         ]}
       >
-        <MaterialIcons name={icon} size={18} color={isSelected ? themeStyles.tintColor : themeStyles.subText} />
+        <MaterialIcons
+          name={icon}
+          size={18}
+          color={isSelected ? themeStyles.tintColor : themeStyles.subText}
+        />
         <Text
           style={[
             styles.selectorButtonText,
-            { color: isSelected ? themeStyles.tintColor : themeStyles.textColor },
+            {
+              color: isSelected ? themeStyles.tintColor : themeStyles.textColor,
+            },
           ]}
         >
           {label}
@@ -137,7 +172,9 @@ export default function CreateMediaListScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: themeStyles.background }]}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: themeStyles.background }]}
+    >
       <Stack.Screen
         options={{
           title: "Criar Lista",
@@ -154,7 +191,9 @@ export default function CreateMediaListScreen() {
         <ScrollView contentContainerStyle={styles.scrollContent}>
           {/* Nome da Lista */}
           <View style={styles.formGroup}>
-            <Text style={[styles.label, { color: themeStyles.subText }]}>Nome da Lista</Text>
+            <Text style={[styles.label, { color: themeStyles.subText }]}>
+              Nome da Lista
+            </Text>
             <TextInput
               style={[
                 styles.textInput,
@@ -174,7 +213,9 @@ export default function CreateMediaListScreen() {
 
           {/* Tipo da Lista (Álbum ou Música) */}
           <View style={styles.formGroup}>
-            <Text style={[styles.label, { color: themeStyles.subText }]}>Tipo de Conteúdo</Text>
+            <Text style={[styles.label, { color: themeStyles.subText }]}>
+              Tipo de Conteúdo
+            </Text>
             <View style={styles.selectorRow}>
               {renderTypeOption("ALBUM", "Álbum", "album")}
               {renderTypeOption("MUSIC", "Música", "music-note")}
@@ -183,7 +224,9 @@ export default function CreateMediaListScreen() {
 
           {/* Descrição */}
           <View style={styles.formGroup}>
-            <Text style={[styles.label, { color: themeStyles.subText }]}>Descrição</Text>
+            <Text style={[styles.label, { color: themeStyles.subText }]}>
+              Descrição
+            </Text>
             <TextInput
               style={[
                 styles.textInput,
@@ -206,7 +249,9 @@ export default function CreateMediaListScreen() {
 
           {/* Privacidade */}
           <View style={styles.formGroup}>
-            <Text style={[styles.label, { color: themeStyles.subText }]}>Privacidade</Text>
+            <Text style={[styles.label, { color: themeStyles.subText }]}>
+              Privacidade
+            </Text>
             <View style={styles.selectorRow}>
               {renderPrivacyOption("PUBLIC", "Público", "public")}
               {renderPrivacyOption("JUST_FOLLOWERS", "Seguidores", "people")}
@@ -216,7 +261,9 @@ export default function CreateMediaListScreen() {
 
           {/* Tags */}
           <View style={styles.formGroup}>
-            <Text style={[styles.label, { color: themeStyles.subText }]}>Tags</Text>
+            <Text style={[styles.label, { color: themeStyles.subText }]}>
+              Tags
+            </Text>
             <TextInput
               style={[
                 styles.textInput,
@@ -236,9 +283,26 @@ export default function CreateMediaListScreen() {
 
           {/* Exibição do erro inline */}
           {submitError && (
-            <View style={[styles.errorContainer, { backgroundColor: themeStyles.errorBg, borderColor: themeStyles.errorText }]}>
-              <MaterialIcons name="error-outline" size={20} color={themeStyles.errorText} style={styles.errorIcon} />
-              <Text style={[styles.errorText, { color: themeStyles.errorText }]}>{submitError}</Text>
+            <View
+              style={[
+                styles.errorContainer,
+                {
+                  backgroundColor: themeStyles.errorBg,
+                  borderColor: themeStyles.errorText,
+                },
+              ]}
+            >
+              <MaterialIcons
+                name="error-outline"
+                size={20}
+                color={themeStyles.errorText}
+                style={styles.errorIcon}
+              />
+              <Text
+                style={[styles.errorText, { color: themeStyles.errorText }]}
+              >
+                {submitError}
+              </Text>
             </View>
           )}
 

@@ -1,24 +1,27 @@
-// Tela: Detalhe da Lista de Mídias — exibe a lista condicionalmente (Visão do Dono vs Visão Pública) via GET /api/mediaList/{id}
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  ActivityIndicator,
-  Pressable,
-  SafeAreaView,
-  Alert,
-  Image,
-} from "react-native";
-import { Stack, useLocalSearchParams, router, Href } from "expo-router";
+// Tela: Detalhe da Lista de Mídias — exibe a lista condicionalmente (Visão do Dono vs Visão Pública) via GET /mediaList/{id}
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import apiClient, { NormalizedError } from "@/src/service/apiClient";
-import { MediaListResponseDto, MediaListOwnerResponseDto } from "@/src/types/mediaList";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import AddMediaModal from "@/src/components/AddMediaModal";
 import EditMediaListNameModal from "@/src/components/EditMediaListNameModal";
 import EditMediaListPrivacyModal from "@/src/components/EditMediaListPrivacyModal";
-import AddMediaModal from "@/src/components/AddMediaModal";
+import apiClient, { NormalizedError } from "@/src/service/api";
+import {
+  MediaListOwnerResponseDto,
+  MediaListResponseDto,
+} from "@/src/types/mediaList";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { Href, router, Stack, useLocalSearchParams } from "expo-router";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
 export default function MediaListDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -28,7 +31,9 @@ export default function MediaListDetailScreen() {
   // States
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<NormalizedError | null>(null);
-  const [mediaList, setMediaList] = useState<MediaListResponseDto | MediaListOwnerResponseDto | null>(null);
+  const [mediaList, setMediaList] = useState<
+    MediaListResponseDto | MediaListOwnerResponseDto | null
+  >(null);
 
   // Modals visibility states
   const [isNameModalVisible, setNameModalVisible] = useState(false);
@@ -40,7 +45,9 @@ export default function MediaListDetailScreen() {
     setLoading(true);
     setError(null);
     try {
-      const response = await apiClient.get<MediaListResponseDto | MediaListOwnerResponseDto>("/api/mediaList/" + id);
+      const response = await apiClient.get<
+        MediaListResponseDto | MediaListOwnerResponseDto
+      >("/mediaList/" + id);
       setMediaList(response.data);
     } catch (err) {
       setError(err as NormalizedError);
@@ -73,9 +80,9 @@ export default function MediaListDetailScreen() {
 
     try {
       if (isFav) {
-        await apiClient.delete(`/api/mediaList/${id}/favorite`);
+        await apiClient.delete(`/mediaList/${id}/favorite`);
       } else {
-        await apiClient.post(`/api/mediaList/${id}/favorite`);
+        await apiClient.post(`/mediaList/${id}/favorite`);
       }
 
       setMediaList((prev) => {
@@ -100,7 +107,10 @@ export default function MediaListDetailScreen() {
       });
     } catch (err) {
       const normalized = err as NormalizedError;
-      Alert.alert("Erro", normalized.message || "Não foi possível atualizar o favorito.");
+      Alert.alert(
+        "Erro",
+        normalized.message || "Não foi possível atualizar o favorito.",
+      );
     }
   };
 
@@ -116,17 +126,20 @@ export default function MediaListDetailScreen() {
           onPress: async () => {
             setLoading(true);
             try {
-              await apiClient.delete(`/api/mediaList/${id}`);
+              await apiClient.delete(`/mediaList/${id}`);
               router.replace("/media-lists/user/me" as Href);
             } catch (err) {
               const normalized = err as NormalizedError;
-              Alert.alert("Erro", normalized.message || "Não foi possível excluir a lista.");
+              Alert.alert(
+                "Erro",
+                normalized.message || "Não foi possível excluir a lista.",
+              );
             } finally {
               setLoading(false);
             }
           },
         },
-      ]
+      ],
     );
   };
 
@@ -134,18 +147,23 @@ export default function MediaListDetailScreen() {
     if (!id) return;
     try {
       const response = await apiClient.delete<MediaListOwnerResponseDto>(
-        `/api/mediaList/${id}/medias/${mediaId}`
+        `/mediaList/${id}/medias/${mediaId}`,
       );
       setMediaList(response.data);
     } catch (err) {
       const normalized = err as NormalizedError;
-      Alert.alert("Erro", normalized.message || "Não foi possível remover a mídia da lista.");
+      Alert.alert(
+        "Erro",
+        normalized.message || "Não foi possível remover a mídia da lista.",
+      );
     }
   };
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.safeArea, { backgroundColor: themeStyles.background }]}>
+      <SafeAreaView
+        style={[styles.safeArea, { backgroundColor: themeStyles.background }]}
+      >
         <Stack.Screen options={{ title: "Carregando..." }} />
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={themeStyles.tintColor} />
@@ -157,19 +175,39 @@ export default function MediaListDetailScreen() {
   if (error || !mediaList) {
     const is404 = error?.status === 404;
     return (
-      <SafeAreaView style={[styles.safeArea, { backgroundColor: themeStyles.background }]}>
+      <SafeAreaView
+        style={[styles.safeArea, { backgroundColor: themeStyles.background }]}
+      >
         <Stack.Screen options={{ title: "Erro" }} />
         <View style={styles.centerContainer}>
-          <View style={[styles.errorCard, { backgroundColor: themeStyles.errorBg, borderColor: themeStyles.errorText }]}>
-            <MaterialIcons name="error-outline" size={44} color={themeStyles.errorText} />
+          <View
+            style={[
+              styles.errorCard,
+              {
+                backgroundColor: themeStyles.errorBg,
+                borderColor: themeStyles.errorText,
+              },
+            ]}
+          >
+            <MaterialIcons
+              name="error-outline"
+              size={44}
+              color={themeStyles.errorText}
+            />
             <Text style={[styles.errorTitle, { color: themeStyles.errorText }]}>
               {is404 ? "Lista não encontrada" : "Erro de Conexão"}
             </Text>
             <Text style={[styles.errorBody, { color: themeStyles.errorText }]}>
-              {is404 ? "A lista de mídias solicitada não pôde ser encontrada no servidor." : (error?.message || "Ocorreu um erro ao carregar os detalhes da lista.")}
+              {is404
+                ? "A lista de mídias solicitada não pôde ser encontrada no servidor."
+                : error?.message ||
+                  "Ocorreu um erro ao carregar os detalhes da lista."}
             </Text>
             <Pressable
-              style={[styles.retryButton, { backgroundColor: themeStyles.tintColor }]}
+              style={[
+                styles.retryButton,
+                { backgroundColor: themeStyles.tintColor },
+              ]}
               onPress={fetchDetail}
             >
               <Text style={styles.retryButtonText}>Tentar Novamente</Text>
@@ -187,7 +225,9 @@ export default function MediaListDetailScreen() {
     : (mediaList as MediaListResponseDto);
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: themeStyles.background }]}>
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: themeStyles.background }]}
+    >
       <Stack.Screen
         options={{
           title: "",
@@ -199,15 +239,32 @@ export default function MediaListDetailScreen() {
               <Pressable
                 onPress={() =>
                   Alert.alert("Opções da Lista", "O que deseja fazer?", [
-                    { text: "Editar Nome", onPress: () => setNameModalVisible(true) },
-                    { text: "Editar Privacidade", onPress: () => setPrivacyModalVisible(true) },
-                    { text: "Excluir Lista", style: "destructive", onPress: handleDeleteList },
+                    {
+                      text: "Editar Nome",
+                      onPress: () => setNameModalVisible(true),
+                    },
+                    {
+                      text: "Editar Privacidade",
+                      onPress: () => setPrivacyModalVisible(true),
+                    },
+                    {
+                      text: "Excluir Lista",
+                      style: "destructive",
+                      onPress: handleDeleteList,
+                    },
                     { text: "Cancelar", style: "cancel" },
                   ])
                 }
-                style={({ pressed }) => [styles.headerButton, pressed && styles.pressed]}
+                style={({ pressed }) => [
+                  styles.headerButton,
+                  pressed && styles.pressed,
+                ]}
               >
-                <MaterialIcons name="more-vert" size={24} color={themeStyles.textColor} />
+                <MaterialIcons
+                  name="more-vert"
+                  size={24}
+                  color={themeStyles.textColor}
+                />
               </Pressable>
             ) : null,
         }}
@@ -216,7 +273,12 @@ export default function MediaListDetailScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Capa da Lista */}
         {/* DEBITO TECNICO: Backend não retorna capa da lista. Usando placeholder. */}
-        <View style={[styles.coverContainer, { backgroundColor: isDark ? "#2A2D31" : "#E2E8F0" }]}>
+        <View
+          style={[
+            styles.coverContainer,
+            { backgroundColor: isDark ? "#2A2D31" : "#E2E8F0" },
+          ]}
+        >
           <MaterialIcons
             name={publicData.typeOfList === "ALBUM" ? "album" : "library-music"}
             size={64}
@@ -231,7 +293,11 @@ export default function MediaListDetailScreen() {
           </Text>
 
           <View style={styles.authorRow}>
-            <MaterialIcons name="account-circle" size={20} color={themeStyles.subText} />
+            <MaterialIcons
+              name="account-circle"
+              size={20}
+              color={themeStyles.subText}
+            />
             <Text style={[styles.authorName, { color: themeStyles.textColor }]}>
               {publicData.authorName || `Usuário #${publicData.idAuthor}`}
             </Text>
@@ -242,12 +308,18 @@ export default function MediaListDetailScreen() {
             <Text style={[styles.statsText, { color: themeStyles.subText }]}>
               {publicData.formattedDuration || "0s"}
             </Text>
-            <Text style={[styles.statsDot, { color: themeStyles.subText }]}>•</Text>
+            <Text style={[styles.statsDot, { color: themeStyles.subText }]}>
+              •
+            </Text>
             <Text style={[styles.statsText, { color: themeStyles.subText }]}>
               {publicData.medias ? publicData.medias.length : 0}{" "}
               {publicData.typeOfList === "ALBUM"
-                ? publicData.medias.length === 1 ? "álbum" : "álbuns"
-                : publicData.medias.length === 1 ? "música" : "músicas"}
+                ? publicData.medias.length === 1
+                  ? "álbum"
+                  : "álbuns"
+                : publicData.medias.length === 1
+                  ? "música"
+                  : "músicas"}
             </Text>
           </View>
         </View>
@@ -268,7 +340,10 @@ export default function MediaListDetailScreen() {
               </Pressable>
             )}
 
-            <Pressable onPress={handleToggleFavorite} style={styles.actionButton}>
+            <Pressable
+              onPress={handleToggleFavorite}
+              style={styles.actionButton}
+            >
               <MaterialIcons
                 name={publicData.isFavorite ? "favorite" : "favorite-border"}
                 size={28}
@@ -278,23 +353,42 @@ export default function MediaListDetailScreen() {
 
             {/* DEBITO TECNICO: Sem funcionalidade de compartilhamento no backend. */}
             <Pressable
-              onPress={() => Alert.alert("Compartilhar", "Sem funcionalidade de compartilhamento no backend.")}
+              onPress={() =>
+                Alert.alert(
+                  "Compartilhar",
+                  "Sem funcionalidade de compartilhamento no backend.",
+                )
+              }
               style={styles.actionButton}
             >
-              <MaterialIcons name="share" size={24} color={themeStyles.subText} />
+              <MaterialIcons
+                name="share"
+                size={24}
+                color={themeStyles.subText}
+              />
             </Pressable>
           </View>
         </View>
 
         {/* Lista de Mídias */}
-        <View style={[styles.card, { backgroundColor: themeStyles.cardBackground, marginTop: 16 }]}>
+        <View
+          style={[
+            styles.card,
+            { backgroundColor: themeStyles.cardBackground, marginTop: 16 },
+          ]}
+        >
           <Text style={[styles.sectionTitle, { color: themeStyles.textColor }]}>
             Conteúdo da Lista
           </Text>
 
           {!publicData.medias || publicData.medias.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <MaterialIcons name="library-music" size={40} color={themeStyles.subText} style={styles.emptyIcon} />
+              <MaterialIcons
+                name="library-music"
+                size={40}
+                color={themeStyles.subText}
+                style={styles.emptyIcon}
+              />
               <Text style={[styles.emptyText, { color: themeStyles.subText }]}>
                 Nenhuma mídia adicionada a esta lista.
               </Text>
@@ -302,23 +396,53 @@ export default function MediaListDetailScreen() {
           ) : (
             <View style={styles.mediaList}>
               {publicData.medias.map((media) => (
-                <View key={media.id} style={[styles.mediaCard, { borderColor: themeStyles.border }]}>
-                  <View style={[styles.mediaIconBg, { backgroundColor: themeStyles.badgeBg }]}>
+                <View
+                  key={media.id}
+                  style={[
+                    styles.mediaCard,
+                    { borderColor: themeStyles.border },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.mediaIconBg,
+                      { backgroundColor: themeStyles.badgeBg },
+                    ]}
+                  >
                     {media.coverUrl ? (
-                      <Image source={{ uri: media.coverUrl }} style={{ width: 40, height: 40, borderRadius: 8 }} />
+                      <Image
+                        source={{ uri: media.coverUrl }}
+                        style={{ width: 40, height: 40, borderRadius: 8 }}
+                      />
                     ) : (
                       <MaterialIcons
-                        name={publicData.typeOfList === "ALBUM" ? "album" : "music-note"}
+                        name={
+                          publicData.typeOfList === "ALBUM"
+                            ? "album"
+                            : "music-note"
+                        }
                         size={20}
                         color={themeStyles.tintColor}
                       />
                     )}
                   </View>
                   <View style={styles.mediaInfo}>
-                    <Text style={[styles.mediaTitle, { color: themeStyles.textColor }]} numberOfLines={1}>
+                    <Text
+                      style={[
+                        styles.mediaTitle,
+                        { color: themeStyles.textColor },
+                      ]}
+                      numberOfLines={1}
+                    >
                       {media.title}
                     </Text>
-                    <Text style={[styles.mediaSubtitle, { color: themeStyles.subText }]} numberOfLines={1}>
+                    <Text
+                      style={[
+                        styles.mediaSubtitle,
+                        { color: themeStyles.subText },
+                      ]}
+                      numberOfLines={1}
+                    >
                       {media.artist} • {media.formattedDuration}
                     </Text>
                   </View>
@@ -334,12 +458,19 @@ export default function MediaListDetailScreen() {
                           { text: "Cancelar", style: "cancel" },
                         ]);
                       } else {
-                        Alert.alert("Opções da Mídia", "Sem opções adicionais disponíveis.");
+                        Alert.alert(
+                          "Opções da Mídia",
+                          "Sem opções adicionais disponíveis.",
+                        );
                       }
                     }}
                     style={styles.moreButton}
                   >
-                    <MaterialIcons name="more-vert" size={20} color={themeStyles.subText} />
+                    <MaterialIcons
+                      name="more-vert"
+                      size={20}
+                      color={themeStyles.subText}
+                    />
                   </Pressable>
                 </View>
               ))}
@@ -359,7 +490,11 @@ export default function MediaListDetailScreen() {
           />
           <EditMediaListPrivacyModal
             visible={isPrivacyModalVisible}
-            currentPrivacy={"whoCanSee" in mediaList ? (mediaList as MediaListOwnerResponseDto).whoCanSee : "PUBLIC"}
+            currentPrivacy={
+              "whoCanSee" in mediaList
+                ? (mediaList as MediaListOwnerResponseDto).whoCanSee
+                : "PUBLIC"
+            }
             listId={Number(id)}
             onClose={() => setPrivacyModalVisible(false)}
             onSuccess={setMediaList}

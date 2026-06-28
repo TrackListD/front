@@ -1,28 +1,32 @@
 // Tela: Criar Avaliação — formulário para criação de uma nova avaliação musical.
 
-import React, { useState, useEffect, useRef } from "react";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { StarRating } from "@/src/components/StarRating";
+import apiClient, { NormalizedError } from "@/src/service/api";
+import { RatingRequestDto } from "@/src/types/rating";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { Stack, router, useLocalSearchParams } from "expo-router";
+import React, { useEffect, useRef, useState } from "react";
 import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  ScrollView,
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  ActivityIndicator,
   Pressable,
   SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
-import { Stack, router } from "expo-router";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import apiClient, { NormalizedError } from "@/src/service/apiClient";
-import { StarRating } from "@/src/components/StarRating";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { RatingRequestDto } from "@/src/types/rating";
 
 export default function CreateRatingScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
+
+  // targetId vem da URL (ex: /ratings/create?targetId=4D7wZ4DevX3v7m93Y6SV6u),
+  // setado ao navegar a partir do card de música/álbum.
+  const { targetId } = useLocalSearchParams<{ targetId?: string }>();
 
   // Mounting and timer tracking to avoid memory leaks/setting state on unmounted component
   const isMountedRef = useRef(true);
@@ -39,18 +43,18 @@ export default function CreateRatingScreen() {
   }, []);
 
   // Form State
-  const [targetId, setTargetId] = useState("");
   const [ratingNote, setRatingNote] = useState<number>(0);
   const [review, setReview] = useState("");
-  const [whoCanSee, setWhoCanSee] = useState<"PUBLIC" | "JUST_FOLLOWERS" | "PRIVATE">("PUBLIC");
+  const [whoCanSee, setWhoCanSee] = useState<
+    "PUBLIC" | "JUST_FOLLOWERS" | "PRIVATE"
+  >("PUBLIC");
 
   // UX State
   const [submitting, setSubmitting] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
-  
+
   // Validation / Error States
   const [validationErrors, setValidationErrors] = useState<{
-    targetId?: string;
     ratingNote?: string;
   }>({});
   const [apiErrors, setApiErrors] = useState<string[]>([]);
@@ -60,13 +64,9 @@ export default function CreateRatingScreen() {
     const errors: typeof validationErrors = {};
     let isValid = true;
 
-    if (!targetId.trim()) {
-      errors.targetId = "O ID da mídia é obrigatório.";
-      isValid = false;
-    }
-
     if (ratingNote <= 0 || ratingNote > 5) {
-      errors.ratingNote = "A nota é obrigatória e deve ser entre 0.5 e 5 estrelas.";
+      errors.ratingNote =
+        "A nota é obrigatória e deve ser entre 0.5 e 5 estrelas.";
       isValid = false;
     } else if (ratingNote % 0.5 !== 0) {
       errors.ratingNote = "A nota deve ser em incrementos de 0.5.";
@@ -82,12 +82,19 @@ export default function CreateRatingScreen() {
     setApiErrors([]);
     setApiErrorMessage(null);
 
+    if (!targetId) {
+      setApiErrorMessage(
+        "Não foi possível identificar a mídia. Volte e tente novamente.",
+      );
+      return;
+    }
+
     if (!validateForm()) {
       return;
     }
 
     const dto: RatingRequestDto = {
-      targetId: targetId.trim(),
+      targetId,
       ratingNote,
       whoCanSee,
     };
@@ -99,13 +106,13 @@ export default function CreateRatingScreen() {
     setSubmitting(true);
 
     try {
-      await apiClient.post("/api/ratings", dto);
-      
+      await apiClient.post("/ratings", dto);
+
       // Success: Show beautiful confirmation and navigate back
       if (isMountedRef.current) {
         setShowSuccessToast(true);
       }
-      
+
       timeoutRef.current = setTimeout(() => {
         if (isMountedRef.current) {
           setShowSuccessToast(false);
@@ -115,12 +122,14 @@ export default function CreateRatingScreen() {
     } catch (err) {
       // Capture normalized error
       const normErr = err as NormalizedError;
-      
+
       if (isMountedRef.current) {
         if (normErr.errors && normErr.errors.length > 0) {
           setApiErrors(normErr.errors);
         } else {
-          setApiErrorMessage(normErr.message || "Erro inesperado ao salvar sua avaliação.");
+          setApiErrorMessage(
+            normErr.message || "Erro inesperado ao salvar sua avaliação.",
+          );
         }
       }
     } finally {
@@ -141,6 +150,8 @@ export default function CreateRatingScreen() {
     tintColor: isDark ? "#38BDF8" : "#0A7EA4",
     segmentedBg: isDark ? "#151719" : "#F1F3F5",
     segmentedActiveBg: isDark ? "#2C2F33" : "#FFFFFF",
+    errorBg: isDark ? "#2A1818" : "#FEF2F2",
+    errorText: isDark ? "#F87171" : "#B91C1C",
   };
 
   const visibilityOptions = [
@@ -149,8 +160,59 @@ export default function CreateRatingScreen() {
     { value: "PRIVATE", label: "Privado", icon: "lock" },
   ] as const;
 
+  // Se a tela foi aberta sem targetId (ex: link direto, deep link incompleto,
+  // ou navegação feita errado), não tem como montar a avaliação — mostramos
+  // um estado de erro em vez de um formulário quebrado/incompleto.
+  if (!targetId) {
+    return (
+      <SafeAreaView
+        style={[styles.safeArea, { backgroundColor: themeStyles.background }]}
+      >
+        <Stack.Screen
+          options={{
+            title: "Nova Avaliação",
+            headerStyle: { backgroundColor: themeStyles.cardBackground },
+            headerTintColor: themeStyles.textColor,
+            headerShadowVisible: false,
+          }}
+        />
+        <View style={styles.missingTargetContainer}>
+          <MaterialIcons
+            name="error-outline"
+            size={44}
+            color={themeStyles.errorText}
+          />
+          <Text
+            style={[
+              styles.missingTargetTitle,
+              { color: themeStyles.errorText },
+            ]}
+          >
+            Mídia não identificada
+          </Text>
+          <Text
+            style={[styles.missingTargetBody, { color: themeStyles.subText }]}
+          >
+            Volte e selecione uma música ou álbum para avaliar.
+          </Text>
+          <Pressable
+            style={[
+              styles.submitButton,
+              { backgroundColor: themeStyles.tintColor },
+            ]}
+            onPress={() => router.back()}
+          >
+            <Text style={styles.submitButtonText}>Voltar</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: themeStyles.background }]}>
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: themeStyles.background }]}
+    >
       <Stack.Screen
         options={{
           title: "Nova Avaliação",
@@ -171,7 +233,9 @@ export default function CreateRatingScreen() {
       {showSuccessToast && (
         <View style={styles.successToast}>
           <MaterialIcons name="check-circle" size={24} color="#FFFFFF" />
-          <Text style={styles.successToastText}>Avaliação criada com sucesso!</Text>
+          <Text style={styles.successToastText}>
+            Avaliação criada com sucesso!
+          </Text>
         </View>
       )}
 
@@ -183,41 +247,12 @@ export default function CreateRatingScreen() {
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={[styles.card, { backgroundColor: themeStyles.cardBackground }]}>
-            
-            {/* Input targetId */}
-            <View style={styles.fieldContainer}>
-              <Text style={[styles.label, { color: themeStyles.textColor }]}>
-                ID da Mídia <Text style={styles.requiredStar}>*</Text>
-              </Text>
-              <Text style={[styles.disclaimerText, { color: themeStyles.subText }]}>
-                (Temporário/mock até existir a busca integrada de mídias)
-              </Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: themeStyles.inputBg,
-                    borderColor: validationErrors.targetId ? "#EF4444" : themeStyles.inputBorder,
-                    color: themeStyles.textColor,
-                  },
-                ]}
-                placeholder="Ex: movie_12345"
-                placeholderTextColor={isDark ? "#525860" : "#A0A5B0"}
-                value={targetId}
-                onChangeText={(text) => {
-                  setTargetId(text);
-                  if (text.trim() && validationErrors.targetId) {
-                    setValidationErrors((prev) => ({ ...prev, targetId: undefined }));
-                  }
-                }}
-                editable={!submitting}
-              />
-              {validationErrors.targetId && (
-                <Text style={styles.errorText}>{validationErrors.targetId}</Text>
-              )}
-            </View>
-
+          <View
+            style={[
+              styles.card,
+              { backgroundColor: themeStyles.cardBackground },
+            ]}
+          >
             {/* Input ratingNote */}
             <View style={styles.fieldContainer}>
               <View style={styles.ratingHeader}>
@@ -225,19 +260,27 @@ export default function CreateRatingScreen() {
                   Sua Nota <Text style={styles.requiredStar}>*</Text>
                 </Text>
                 {ratingNote > 0 && (
-                  <Text style={[styles.ratingValueText, { color: themeStyles.tintColor }]}>
+                  <Text
+                    style={[
+                      styles.ratingValueText,
+                      { color: themeStyles.tintColor },
+                    ]}
+                  >
                     {ratingNote.toFixed(1)} / 5.0
                   </Text>
                 )}
               </View>
-              
+
               <View style={styles.ratingContainer}>
                 <StarRating
                   rating={ratingNote}
                   onChange={(val) => {
                     setRatingNote(val);
                     if (val > 0 && validationErrors.ratingNote) {
-                      setValidationErrors((prev) => ({ ...prev, ratingNote: undefined }));
+                      setValidationErrors((prev) => ({
+                        ...prev,
+                        ratingNote: undefined,
+                      }));
                     }
                   }}
                   disabled={submitting}
@@ -247,14 +290,24 @@ export default function CreateRatingScreen() {
                 />
               </View>
               {validationErrors.ratingNote && (
-                <Text style={styles.errorText}>{validationErrors.ratingNote}</Text>
+                <Text style={styles.errorText}>
+                  {validationErrors.ratingNote}
+                </Text>
               )}
             </View>
 
             {/* Input review */}
             <View style={styles.fieldContainer}>
               <Text style={[styles.label, { color: themeStyles.textColor }]}>
-                Sua Opinião <Text style={[styles.disclaimerText, { color: themeStyles.subText }]}>- Opcional</Text>
+                Sua Opinião{" "}
+                <Text
+                  style={[
+                    styles.disclaimerText,
+                    { color: themeStyles.subText },
+                  ]}
+                >
+                  - Opcional
+                </Text>
               </Text>
               <TextInput
                 style={[
@@ -282,7 +335,12 @@ export default function CreateRatingScreen() {
               <Text style={[styles.label, { color: themeStyles.textColor }]}>
                 Quem pode ver esta avaliação?
               </Text>
-              <View style={[styles.segmentedContainer, { backgroundColor: themeStyles.segmentedBg }]}>
+              <View
+                style={[
+                  styles.segmentedContainer,
+                  { backgroundColor: themeStyles.segmentedBg },
+                ]}
+              >
                 {visibilityOptions.map((opt) => {
                   const isSelected = whoCanSee === opt.value;
                   return (
@@ -301,13 +359,21 @@ export default function CreateRatingScreen() {
                       <MaterialIcons
                         name={opt.icon}
                         size={16}
-                        color={isSelected ? themeStyles.tintColor : themeStyles.subText}
+                        color={
+                          isSelected
+                            ? themeStyles.tintColor
+                            : themeStyles.subText
+                        }
                         style={styles.segmentedIcon}
                       />
                       <Text
                         style={[
                           styles.segmentedText,
-                          { color: isSelected ? themeStyles.textColor : themeStyles.subText },
+                          {
+                            color: isSelected
+                              ? themeStyles.textColor
+                              : themeStyles.subText,
+                          },
                           isSelected && styles.segmentedTextActive,
                         ]}
                       >
@@ -324,7 +390,9 @@ export default function CreateRatingScreen() {
               <View style={styles.apiErrorContainer}>
                 <MaterialIcons name="error-outline" size={20} color="#EF4444" />
                 <View style={styles.apiErrorList}>
-                  {apiErrorMessage && <Text style={styles.apiErrorText}>{apiErrorMessage}</Text>}
+                  {apiErrorMessage && (
+                    <Text style={styles.apiErrorText}>{apiErrorMessage}</Text>
+                  )}
                   {apiErrors.map((err, i) => (
                     <Text key={i} style={styles.apiErrorText}>
                       • {err}
@@ -351,7 +419,6 @@ export default function CreateRatingScreen() {
                 <Text style={styles.submitButtonText}>Publicar Avaliação</Text>
               )}
             </Pressable>
-
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -514,9 +581,21 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 5,
   },
-  successToastText: {
-    color: "#FFFFFF",
-    fontSize: 15,
-    fontWeight: "600",
+  missingTargetContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 32,
+    gap: 12,
+  },
+  missingTargetTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  missingTargetBody: {
+    fontSize: 14,
+    textAlign: "center",
+    lineHeight: 20,
+    marginBottom: 8,
   },
 });

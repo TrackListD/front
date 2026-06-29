@@ -32,6 +32,7 @@ export default function FeedList({
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [authLoaded, setAuthLoaded] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<number | undefined>();
 
   const fetchFeed = useCallback(
     async (showLoadingIndicator = true) => {
@@ -61,8 +62,23 @@ export default function FeedList({
   );
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       console.log("Firebase carregou:", user?.uid);
+
+      if (user) {
+        try {
+          const response = await authFetch("/users/me");
+          if (response.ok) {
+            const data = await response.json();
+            setCurrentUserId(data.id);
+          }
+        } catch (error) {
+          console.error("Erro ao buscar usuário atual:", error);
+        }
+      } else {
+        setCurrentUserId(undefined);
+      }
+
       setAuthLoaded(true);
     });
 
@@ -195,6 +211,7 @@ export default function FeedList({
         renderItem={({ item }) => (
           <PostCard
             item={item}
+            currentUserId={currentUserId}
             onToggleLike={handleToggleLike}
             onFollow={handleFollow}
           />

@@ -1,26 +1,27 @@
-// Tela: Comentários de uma Avaliação — lista e gerencia comentários de uma publicação específica via GET /api/comments/post/{postId}
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TextInput,
-  Pressable,
-  ActivityIndicator,
-  SafeAreaView,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-} from "react-native";
-import { Stack, useLocalSearchParams } from "expo-router";
+// Tela: Comentários de uma Avaliação — lista e gerencia comentários de uma publicação específica via GET /comments/post/{postId}
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import apiClient, { NormalizedError } from "@/src/service/apiClient";
+import EditCommentModal from "@/src/components/EditCommentModal";
+import apiClient, { NormalizedError } from "@/src/service/api";
+import { toggleLike } from "@/src/service/feedApi";
 import { CommentResponseDto } from "@/src/types/comment";
 import { UserPerfilResponseDTO } from "@/src/types/user";
-import EditCommentModal from "@/src/components/EditCommentModal";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { formatDateBR } from "@/src/utils/dateUtils";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { Stack, useLocalSearchParams } from "expo-router";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 
 export default function PostCommentsScreen() {
   const { postId } = useLocalSearchParams<{ postId: string }>();
@@ -39,7 +40,8 @@ export default function PostCommentsScreen() {
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Modal editing state
-  const [editingComment, setEditingComment] = useState<CommentResponseDto | null>(null);
+  const [editingComment, setEditingComment] =
+    useState<CommentResponseDto | null>(null);
 
   // Theme configuration
   const themeStyles = {
@@ -53,6 +55,7 @@ export default function PostCommentsScreen() {
     errorBg: isDark ? "#2A1818" : "#FEF2F2",
     errorText: isDark ? "#F87171" : "#B91C1C",
     inputBg: isDark ? "#151719" : "#FFFFFF",
+    heartColor: "#EF4444", // Cor vermelha vibrante para o coração curtido
   };
 
   const fetchComments = async () => {
@@ -60,7 +63,13 @@ export default function PostCommentsScreen() {
     setLoading(true);
     setError(null);
     try {
-      const response = await apiClient.get<CommentResponseDto[]>("/api/comments/post/" + postId);
+      const response = await apiClient.get<CommentResponseDto[]>(
+        "/comments/post/" + postId,
+      );
+      console.log(
+        "CONTEÚDO DO BACKEND:",
+        JSON.stringify(response.data, null, 2),
+      );
       setComments(response.data);
     } catch (err) {
       setError(err as NormalizedError);
@@ -73,7 +82,8 @@ export default function PostCommentsScreen() {
     fetchComments();
     const fetchCurrentUser = async () => {
       try {
-        const response = await apiClient.get<UserPerfilResponseDTO>("/api/users/me");
+        const response =
+          await apiClient.get<UserPerfilResponseDTO>("/users/me");
         setCurrentUserId(response.data.id);
       } catch (err) {
         console.error("Erro ao carregar usuário atual:", err);
@@ -82,15 +92,15 @@ export default function PostCommentsScreen() {
     fetchCurrentUser();
   }, [postId]);
 
-
-
   const handleCreateComment = async () => {
     if (!newCommentText.trim() || !postId) return;
 
     setSubmitting(true);
     setSubmitError(null);
     try {
-      const response = await apiClient.post<Omit<CommentResponseDto, "id"> & { id?: number }>("/api/comments", {
+      const response = await apiClient.post<
+        Omit<CommentResponseDto, "id"> & { id?: number }
+      >("/comments", {
         idPost: Number(postId),
         text: newCommentText.trim(),
       });
@@ -98,6 +108,8 @@ export default function PostCommentsScreen() {
       const newComment: CommentResponseDto = {
         ...response.data,
         id: response.data.id ?? Date.now(),
+        likeCount: 0,
+        likedByMe: false,
       };
 
       setComments((prev) => [newComment, ...prev]);
@@ -121,32 +133,106 @@ export default function PostCommentsScreen() {
           style: "destructive",
           onPress: async () => {
             try {
-              await apiClient.delete(`/api/comments/${commentId}`);
+              await apiClient.delete(`/comments/${commentId}`);
               setComments((prev) => prev.filter((c) => c.id !== commentId));
             } catch (err) {
               const normalized = err as NormalizedError;
-              Alert.alert("Erro", normalized.message || "Erro ao excluir o comentário.");
+              Alert.alert(
+                "Erro",
+                normalized.message || "Erro ao excluir o comentário.",
+              );
             }
           },
         },
-      ]
+      ],
     );
+  };
+
+  const handleToggleCommentLike = async (commentId: number) => {
+    // Atualização Otimista local
+    setComments((currentComments) =>
+      currentComments.map((comment) =>
+        comment.id === commentId
+          ? {
+              ...comment,
+              likedByMe: !comment.likedByMe,
+              likeCount: comment.likedByMe
+                ? comment.likeCount - 1
+                : comment.likeCount + 1,
+            }
+          : comment,
+      ),
+    );
+
+    try {
+      // Executa a chamada na API para persistir o estado da curtida
+      const result = await toggleLike(commentId);
+
+      // Sincroniza o estado com o retorno real da API
+      setComments((currentComments) =>
+        currentComments.map((comment) =>
+          comment.id === commentId
+            ? {
+                ...comment,
+                likedByMe: result.liked,
+                likeCount: result.likesCount ?? result.likesCount,
+              }
+            : comment,
+        ),
+      );
+    } catch (err) {
+      console.error("Erro ao curtir o comentário:", commentId, err);
+
+      // Reverte o estado caso falhe
+      setComments((currentComments) =>
+        currentComments.map((comment) =>
+          comment.id === commentId
+            ? {
+                ...comment,
+                likedByMe: !comment.likedByMe,
+                likeCount: comment.likedByMe
+                  ? comment.likeCount - 1
+                  : comment.likeCount + 1,
+              }
+            : comment,
+        ),
+      );
+
+      Alert.alert(
+        "Erro",
+        "Não foi possível registrar a sua curtida. Tente novamente.",
+      );
+    }
   };
 
   const renderCommentCard = ({ item }: { item: CommentResponseDto }) => {
     const isOwner = currentUserId !== null && item.idAuthor === currentUserId;
 
     return (
-      <View style={[styles.commentCard, { backgroundColor: themeStyles.cardBackground, borderColor: themeStyles.border }]}>
+      <View
+        style={[
+          styles.commentCard,
+          {
+            backgroundColor: themeStyles.cardBackground,
+            borderColor: themeStyles.border,
+          },
+        ]}
+      >
         <View style={styles.cardHeader}>
           <View style={styles.authorContainer}>
-            <View style={[styles.avatar, { backgroundColor: themeStyles.avatarBg }]}>
-              <Text style={[styles.avatarText, { color: themeStyles.textColor }]}>
+            <View
+              style={[styles.avatar, { backgroundColor: themeStyles.avatarBg }]}
+            >
+              <Text
+                style={[styles.avatarText, { color: themeStyles.textColor }]}
+              >
                 U
               </Text>
             </View>
             <View>
-              <Text style={[styles.authorName, { color: themeStyles.textColor }]}>
+              <Text
+                style={[styles.authorName, { color: themeStyles.textColor }]}
+              >
                 Usuário #{item.idAuthor}
               </Text>
               <Text style={[styles.dateText, { color: themeStyles.subText }]}>
@@ -158,13 +244,23 @@ export default function PostCommentsScreen() {
           {isOwner && (
             <View style={styles.actionsContainer}>
               <Pressable
-                style={({ pressed }) => [styles.actionButton, pressed && styles.pressed]}
+                style={({ pressed }) => [
+                  styles.actionButton,
+                  pressed && styles.pressed,
+                ]}
                 onPress={() => setEditingComment(item)}
               >
-                <MaterialIcons name="edit" size={18} color={themeStyles.tintColor} />
+                <MaterialIcons
+                  name="edit"
+                  size={18}
+                  color={themeStyles.tintColor}
+                />
               </Pressable>
               <Pressable
-                style={({ pressed }) => [styles.actionButton, pressed && styles.pressed]}
+                style={({ pressed }) => [
+                  styles.actionButton,
+                  pressed && styles.pressed,
+                ]}
                 onPress={() => handleDeleteComment(item.id)}
               >
                 <MaterialIcons name="delete" size={18} color="#EF4444" />
@@ -178,26 +274,62 @@ export default function PostCommentsScreen() {
         </Text>
 
         <View style={styles.cardFooter}>
-          <View style={styles.likesContainer}>
-            <MaterialIcons name="thumb-up-off-alt" size={16} color={themeStyles.subText} />
-            <Text style={[styles.likesText, { color: themeStyles.subText }]}>
+          <Pressable
+            style={({ pressed }) => [
+              styles.likesContainer,
+              pressed && styles.pressed,
+            ]}
+            onPress={() => handleToggleCommentLike(item.id)}
+          >
+            <MaterialIcons
+              name={item.likedByMe ? "favorite" : "favorite-border"}
+              size={18}
+              color={
+                item.likedByMe ? themeStyles.heartColor : themeStyles.subText
+              }
+            />
+            <Text
+              style={[
+                styles.likesText,
+                {
+                  color: item.likedByMe
+                    ? themeStyles.heartColor
+                    : themeStyles.subText,
+                },
+              ]}
+            >
               {item.likeCount} {item.likeCount === 1 ? "curtida" : "curtidas"}
             </Text>
-          </View>
+          </Pressable>
         </View>
       </View>
     );
   };
 
   const renderHeader = () => (
-    <View style={[styles.headerContainer, { backgroundColor: themeStyles.cardBackground, borderColor: themeStyles.border }]}>
+    <View
+      style={[
+        styles.headerContainer,
+        {
+          backgroundColor: themeStyles.cardBackground,
+          borderColor: themeStyles.border,
+        },
+      ]}
+    >
       <Text style={[styles.sectionTitle, { color: themeStyles.textColor }]}>
         Novo Comentário
       </Text>
-      
+
       <View style={styles.inputRow}>
         <TextInput
-          style={[styles.input, { backgroundColor: themeStyles.inputBg, color: themeStyles.textColor, borderColor: themeStyles.border }]}
+          style={[
+            styles.input,
+            {
+              backgroundColor: themeStyles.inputBg,
+              color: themeStyles.textColor,
+              borderColor: themeStyles.border,
+            },
+          ]}
           placeholder="Adicione um comentário..."
           placeholderTextColor={themeStyles.subText}
           value={newCommentText}
@@ -205,7 +337,7 @@ export default function PostCommentsScreen() {
           multiline
           editable={!submitting}
         />
-        
+
         <Pressable
           style={({ pressed }) => [
             styles.submitButton,
@@ -225,7 +357,12 @@ export default function PostCommentsScreen() {
       </View>
 
       {submitError && (
-        <View style={[styles.errorContainer, { backgroundColor: themeStyles.errorBg }]}>
+        <View
+          style={[
+            styles.errorContainer,
+            { backgroundColor: themeStyles.errorBg },
+          ]}
+        >
           <Text style={[styles.errorText, { color: themeStyles.errorText }]}>
             {submitError}
           </Text>
@@ -236,7 +373,12 @@ export default function PostCommentsScreen() {
 
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
-      <MaterialIcons name="forum" size={48} color={themeStyles.subText} style={styles.emptyIcon} />
+      <MaterialIcons
+        name="forum"
+        size={48}
+        color={themeStyles.subText}
+        style={styles.emptyIcon}
+      />
       <Text style={[styles.emptyText, { color: themeStyles.subText }]}>
         Ainda não há comentários nesta publicação.
       </Text>
@@ -247,7 +389,9 @@ export default function PostCommentsScreen() {
   );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: themeStyles.background }]}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: themeStyles.background }]}
+    >
       <Stack.Screen
         options={{
           title: "Comentários",
@@ -268,16 +412,35 @@ export default function PostCommentsScreen() {
           </View>
         ) : error ? (
           <View style={styles.centerContainer}>
-            <View style={[styles.errorCard, { backgroundColor: themeStyles.errorBg, borderColor: themeStyles.errorText }]}>
-              <MaterialIcons name="error-outline" size={40} color={themeStyles.errorText} />
-              <Text style={[styles.errorTitle, { color: themeStyles.errorText }]}>
+            <View
+              style={[
+                styles.errorCard,
+                {
+                  backgroundColor: themeStyles.errorBg,
+                  borderColor: themeStyles.errorText,
+                },
+              ]}
+            >
+              <MaterialIcons
+                name="error-outline"
+                size={40}
+                color={themeStyles.errorText}
+              />
+              <Text
+                style={[styles.errorTitle, { color: themeStyles.errorText }]}
+              >
                 Erro de Conexão
               </Text>
-              <Text style={[styles.errorBody, { color: themeStyles.errorText }]}>
+              <Text
+                style={[styles.errorBody, { color: themeStyles.errorText }]}
+              >
                 {error.message || "Erro ao carregar comentários."}
               </Text>
               <Pressable
-                style={[styles.retryButton, { backgroundColor: themeStyles.tintColor }]}
+                style={[
+                  styles.retryButton,
+                  { backgroundColor: themeStyles.tintColor },
+                ]}
                 onPress={fetchComments}
               >
                 <Text style={styles.retryButtonText}>Tentar Novamente</Text>
@@ -289,7 +452,7 @@ export default function PostCommentsScreen() {
             data={comments}
             keyExtractor={(item) => item.id.toString()}
             renderItem={renderCommentCard}
-            ListHeaderComponent={renderHeader}
+            ListHeaderComponent={renderHeader()}
             ListEmptyComponent={renderEmptyState}
             contentContainerStyle={styles.listContent}
           />
@@ -304,7 +467,9 @@ export default function PostCommentsScreen() {
           onClose={() => setEditingComment(null)}
           onSuccess={(updatedComment) => {
             setComments((prev) =>
-              prev.map((c) => (c.id === updatedComment.id ? updatedComment : c))
+              prev.map((c) =>
+                c.id === updatedComment.id ? updatedComment : c,
+              ),
             );
           }}
         />
@@ -425,7 +590,7 @@ const styles = StyleSheet.create({
   likesContainer: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: 6,
   },
   likesText: {
     fontSize: 12,

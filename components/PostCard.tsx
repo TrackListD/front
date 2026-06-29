@@ -1,11 +1,19 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Href, useRouter } from "expo-router";
-import React from "react";
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import React, { useRef, useState } from "react";
+import {
+  Animated,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { FeedItem } from "../types/feed";
 
 type PostCardProps = {
   item: FeedItem;
+  currentUserId?: number;
   onToggleLike: (postId: number) => void;
   onFollow: (authorId: number) => void;
 };
@@ -46,10 +54,46 @@ function renderStars(rating: number | null) {
 
 export default function PostCard({
   item,
+  currentUserId,
   onToggleLike,
   onFollow,
 }: PostCardProps) {
   const router = useRouter();
+
+  // Controla se o botão "Seguir" ainda deve ser renderizado.
+  // Só vira false depois que a animação de saída termina.
+  const [followButtonVisible, setFollowButtonVisible] = useState(true);
+
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const opacityAnim = useRef(new Animated.Value(1)).current;
+
+  const handleFollowPress = () => {
+    onFollow(item.author.id);
+
+    Animated.sequence([
+      // 1. Pulse: cresce rápido
+      Animated.timing(scaleAnim, {
+        toValue: 1.15,
+        duration: 120,
+        useNativeDriver: true,
+      }),
+      // 2. Encolhe e desaparece junto
+      Animated.parallel([
+        Animated.timing(scaleAnim, {
+          toValue: 0.7,
+          duration: 180,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacityAnim, {
+          toValue: 0,
+          duration: 180,
+          useNativeDriver: true,
+        }),
+      ]),
+    ]).start(() => {
+      setFollowButtonVisible(false);
+    });
+  };
 
   const displayName = item.author.name
     ? item.author.name
@@ -97,14 +141,24 @@ export default function PostCard({
           </Text>
         </TouchableOpacity>
 
-        {!item.authorFollowedByAuthUser && (
-          <TouchableOpacity
-            style={styles.followButton}
-            onPress={() => onFollow(item.author.id)}
-          >
-            <Text style={styles.followButtonText}>Seguir</Text>
-          </TouchableOpacity>
-        )}
+        {followButtonVisible &&
+          !item.authorFollowedByAuthUser &&
+          item.author.id !== currentUserId && (
+            <Animated.View
+              style={{
+                marginLeft: "auto",
+                transform: [{ scale: scaleAnim }],
+                opacity: opacityAnim,
+              }}
+            >
+              <TouchableOpacity
+                style={styles.followButton}
+                onPress={handleFollowPress}
+              >
+                <Text style={styles.followButtonText}>Seguir</Text>
+              </TouchableOpacity>
+            </Animated.View>
+          )}
       </View>
 
       {/* 1. VISUALIZAÇÃO: SE FOR AVALIAÇÃO DE MÍDIA COMPARTILHADA (RATING) */}
@@ -398,7 +452,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   followButton: {
-    marginLeft: "auto",
     backgroundColor: "#1DB954",
     paddingHorizontal: 14,
     paddingVertical: 8,

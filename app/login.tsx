@@ -1,6 +1,6 @@
 import { AntDesign } from "@expo/vector-icons"; // Importando os ícones do Expo
 import * as Google from "expo-auth-session/providers/google";
-import { Link, useRouter } from "expo-router";
+import { Link, useRouter, Href } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import {
   GoogleAuthProvider,
@@ -31,7 +31,7 @@ export default function Login() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        router.replace("/feed/me");
+        router.replace("/feed/me" as Href);
       }
     });
     return unsubscribe;
@@ -54,7 +54,7 @@ export default function Login() {
         const credential = GoogleAuthProvider.credential(idToken);
         await signInWithCredential(auth, credential);
         console.log("Usuário logado:", auth.currentUser);
-        router.replace("/feed/me");
+        router.replace("/feed/me" as Href);
       } else if (response?.type === "error") {
         console.error("Erro na autenticação com Google:", response.error);
       }
@@ -79,7 +79,7 @@ export default function Login() {
         {/* Card Informativo Superior */}
         <View style={styles.infoCard}>
           <View style={styles.infoIconBox}>
-            <AntDesign name="message1" size={18} color="#52b788" />
+            <AntDesign name="message" size={18} color="#52b788" />
           </View>
           <Text style={styles.infoText}>
             Avalie seus álbuns e músicas favoritos.
@@ -102,7 +102,7 @@ export default function Login() {
         </TouchableOpacity>
 
         {/* Botão Explorar sem conta */}
-        <Link href="/feed/global" asChild>
+        <Link href={"/feed/global" as Href} asChild>
           <TouchableOpacity style={styles.exploreButton}>
             <Text style={styles.exploreButtonText}>Explorar sem conta</Text>
           </TouchableOpacity>

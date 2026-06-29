@@ -192,6 +192,19 @@ export default function FeedList({
     [router],
   );
 
+  const handleReport = useCallback(
+  (postId: number, authorId: number) => {
+      router.push({
+        pathname: "/reportModal",
+        params: { 
+          commentId: postId, 
+          userTargetId: authorId 
+        }
+      });
+    },
+    [router],
+  );
+
   if (loading) {
     return (
       <View style={[styles.container, styles.center]}>
@@ -214,6 +227,7 @@ export default function FeedList({
             currentUserId={currentUserId}
             onToggleLike={handleToggleLike}
             onFollow={handleFollow}
+            onReport={handleReport}
           />
         )}
         showsVerticalScrollIndicator={false}

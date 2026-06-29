@@ -15,20 +15,35 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Stack>
+      <Stack screenOptions={{ headerShown: false }}>
         {/* Telas base */}
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="login" options={{ headerShown: false }} />
-        
+        <Stack.Screen name="index" />
+        <Stack.Screen name="login" />
+
         {/* Rotas de Avaliações */}
         <Stack.Screen name="ratings/create" />
         <Stack.Screen name="ratings/[id]" />
         <Stack.Screen name="ratings/user/[userId]" />
 
+        {/* Telas principais */}
+        <Stack.Screen name="feed" />
+        <Stack.Screen name="profile" />
 
-        <Stack.Screen name="feed" options={{ headerShown: false }} />
-        <Stack.Screen name="profile" options={{ headerShown: false }} />
+        {/* Modal de denúncia */}
+        <Stack.Screen
+          name="reportModal"
+          options={{
+            presentation: "modal",
+            headerShown: true,
+            title: "Denúncia",
+            headerStyle: {
+              backgroundColor: colorScheme === "dark" ? "#121212" : "#fff",
+            },
+            headerTintColor: colorScheme === "dark" ? "#fff" : "#000",
+          }}
+        />
       </Stack>
+
       <StatusBar style="auto" />
     </ThemeProvider>
   );

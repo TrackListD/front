@@ -75,7 +75,17 @@ export default function HeaderNavbar() {
 
         {/* Ações */}
         <View style={styles.actionsContainer}>
-          {/* NOVO: Botão de busca (Lupa) */}
+          {/* NOVO: Botão Criar Lista */}
+          <TouchableOpacity
+            style={styles.createListButton}
+            onPress={() => router.push("/media-lists/create" as Href)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="add-circle-outline" size={18} color="#1DB954" />
+            <Text style={styles.createListText}>Criar Lista</Text>
+          </TouchableOpacity>
+
+          {/* Botão de busca (Lupa) */}
           <TouchableOpacity
             style={styles.iconButton}
             onPress={() => router.push("/search" as Href)}
@@ -188,8 +198,27 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
+  // Estilos do novo botão "Criar Lista"
+  createListButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#1A1F24",
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#2C353F",
+  },
+
+  createListText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "700",
+    marginLeft: 4,
+  },
+
   iconButton: {
-    marginLeft: 16,
+    marginLeft: 14,
     position: "relative",
     padding: 4,
   },

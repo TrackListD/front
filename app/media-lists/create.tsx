@@ -1,4 +1,4 @@
-// Tela: Criar Nova Lista — formulário Frontend-First para POST /api/mediaList
+// Tela: Criar Nova Lista — formulário Frontend-First para POST /mediaList
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import apiClient, { NormalizedError } from "@/src/service/api";
 import {
@@ -76,7 +76,7 @@ export default function CreateMediaListScreen() {
 
     try {
       const response = await apiClient.post<MediaListOwnerResponseDto>(
-        "/api/mediaList",
+        "/mediaList",
         payload,
       );
 

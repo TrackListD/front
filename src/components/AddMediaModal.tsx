@@ -1,26 +1,26 @@
-// Componente: Modal de busca do Spotify com Debounce e vínculo de mídia via POST /api/mediaList/{id}/medias/{mediaId}
-import React, { useState, useEffect } from "react";
-import {
-  Modal,
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  Pressable,
-  FlatList,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  TouchableWithoutFeedback,
-  Keyboard,
-  Alert,
-  Image,
-} from "react-native";
+// Componente: Modal de busca do Spotify com Debounce e vínculo de mídia via POST /mediaList/{id}/medias/{mediaId}
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import apiClient, { NormalizedError } from "@/src/service/apiClient";
+import apiClient, { authFetch, NormalizedError } from "@/src/service/api";
 import { MediaListOwnerResponseDto } from "@/src/types/mediaList";
 import { SpotifyItemDto, SpotifySearchResponseDTO } from "@/src/types/spotify";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Image,
+  Keyboard,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableWithoutFeedback,
+  View,
+} from "react-native";
 
 interface AddMediaModalProps {
   visible: boolean;
@@ -73,14 +73,23 @@ export default function AddMediaModal({
     setIsSearching(true);
     const delayDebounceFn = setTimeout(async () => {
       try {
-        const response = await apiClient.get<SpotifySearchResponseDTO>(
-          `/api/search?q=${encodeURIComponent(query.trim())}`
+        // Usa authFetch diretamente, igual ao searchService — em vez de
+        // apiClient.get, que não estava autenticando a chamada corretamente.
+        const response = await authFetch(
+          `/search?q=${encodeURIComponent(query.trim())}`,
+          { method: "GET" },
         );
 
+        if (!response.ok) {
+          throw new Error(`Erro na busca: ${response.statusText}`);
+        }
+
+        const data: SpotifySearchResponseDTO = await response.json();
+
         if (typeOfList === "MUSIC") {
-          setResults(response.data.tracks?.items || []);
+          setResults(data.tracks?.items || []);
         } else if (typeOfList === "ALBUM") {
-          setResults(response.data.albums?.items || []);
+          setResults(data.albums?.items || []);
         } else {
           setResults([]);
         }
@@ -111,8 +120,9 @@ export default function AddMediaModal({
     setIsAdding(true);
     setAddingItemId(item.id);
     try {
+      // OBS: mesma lógica do baseURL — sem repetir "/api" aqui.
       const response = await apiClient.post<MediaListOwnerResponseDto>(
-        `/api/mediaList/${listId}/medias/${item.id}`
+        `/mediaList/${listId}/medias/${item.id}`,
       );
       onSuccess(response.data);
       // Mudar ícone temporariamente para indicar sucesso
@@ -122,7 +132,10 @@ export default function AddMediaModal({
       }, 2000);
     } catch (err) {
       const normalized = err as NormalizedError;
-      Alert.alert("Erro", normalized.message || "Não foi possível adicionar esta mídia.");
+      Alert.alert(
+        "Erro",
+        normalized.message || "Não foi possível adicionar esta mídia.",
+      );
     } finally {
       setIsAdding(false);
       setAddingItemId(null);
@@ -132,16 +145,41 @@ export default function AddMediaModal({
   const renderSpotifyItem = ({ item }: { item: SpotifyItemDto }) => {
     const isItemAdding = addingItemId === item.id;
     const isItemAdded = !!addedItems[item.id];
-    const artistName = item.artists && item.artists.length > 0 ? item.artists[0].name : "Artista desconhecido";
-    const coverUrl = item.images && item.images.length > 0
-      ? item.images[0].url
-      : (item.cover_url && item.cover_url.length > 0 ? item.cover_url[0].url : null);
+    const artistName =
+      item.artists && item.artists.length > 0
+        ? item.artists[0].name
+        : "Artista desconhecido";
+    const coverUrl =
+      item.images && item.images.length > 0
+        ? item.images[0].url
+        : item.cover_url && item.cover_url.length > 0
+          ? item.cover_url[0].url
+          : null;
 
     return (
-      <View style={[styles.itemCard, { backgroundColor: themeStyles.cardBg, borderColor: themeStyles.border }]}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 12, flex: 1, marginRight: 12 }}>
+      <View
+        style={[
+          styles.itemCard,
+          {
+            backgroundColor: themeStyles.cardBg,
+            borderColor: themeStyles.border,
+          },
+        ]}
+      >
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 12,
+            flex: 1,
+            marginRight: 12,
+          }}
+        >
           {coverUrl ? (
-            <Image source={{ uri: coverUrl }} style={{ width: 40, height: 40, borderRadius: 6 }} />
+            <Image
+              source={{ uri: coverUrl }}
+              style={{ width: 40, height: 40, borderRadius: 6 }}
+            />
           ) : (
             <View
               style={{
@@ -161,10 +199,16 @@ export default function AddMediaModal({
             </View>
           )}
           <View style={styles.itemInfo}>
-            <Text style={[styles.itemTitle, { color: themeStyles.textColor }]} numberOfLines={1}>
+            <Text
+              style={[styles.itemTitle, { color: themeStyles.textColor }]}
+              numberOfLines={1}
+            >
               {item.name}
             </Text>
-            <Text style={[styles.itemSubtitle, { color: themeStyles.subText }]} numberOfLines={1}>
+            <Text
+              style={[styles.itemSubtitle, { color: themeStyles.subText }]}
+              numberOfLines={1}
+            >
               {artistName}
             </Text>
           </View>
@@ -176,13 +220,20 @@ export default function AddMediaModal({
           style={({ pressed }) => [
             styles.actionButton,
             {
-              backgroundColor: isItemAdded ? "#10B981" : isDark ? "#2A2D31" : "#E4E7EB",
+              backgroundColor: isItemAdded
+                ? "#10B981"
+                : isDark
+                  ? "#2A2D31"
+                  : "#E4E7EB",
             },
             pressed && styles.pressed,
           ]}
         >
           {isItemAdding ? (
-            <ActivityIndicator size="small" color={isDark ? "#ECEDEE" : "#11181C"} />
+            <ActivityIndicator
+              size="small"
+              color={isDark ? "#ECEDEE" : "#11181C"}
+            />
           ) : isItemAdded ? (
             <MaterialIcons name="check" size={20} color="#FFFFFF" />
           ) : (
@@ -200,61 +251,106 @@ export default function AddMediaModal({
       animationType="slide"
       onRequestClose={onClose}
     >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View style={[styles.backdrop, { backgroundColor: themeStyles.backdrop }]}>
-          <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
-            style={styles.keyboardView}
+      <View
+        style={[styles.backdrop, { backgroundColor: themeStyles.backdrop }]}
+      >
+        {/* Área vazia acima do card: tocar aqui fecha o teclado, mas não bloqueia o TextInput abaixo */}
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <View style={{ flex: 1 }} />
+        </TouchableWithoutFeedback>
+
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.keyboardView}
+        >
+          <View
+            style={[
+              styles.modalCard,
+              { backgroundColor: themeStyles.modalBackground },
+            ]}
           >
-            <View style={[styles.modalCard, { backgroundColor: themeStyles.modalBackground }]}>
-              {/* Header */}
-              <View style={styles.header}>
-                <Text style={[styles.title, { color: themeStyles.textColor }]}>
-                  {typeOfList === "MUSIC" ? "Adicionar Músicas" : "Adicionar Álbum"}
-                </Text>
-                <Pressable onPress={onClose} disabled={isAdding} style={styles.closeButton}>
-                  <MaterialIcons name="close" size={24} color={themeStyles.textColor} />
-                </Pressable>
-              </View>
-
-              {/* Campo de Busca */}
-              <View style={[styles.searchContainer, { backgroundColor: themeStyles.inputBg, borderColor: themeStyles.border }]}>
-                <MaterialIcons name="search" size={20} color={themeStyles.subText} style={styles.searchIcon} />
-                <TextInput
-                  style={[styles.input, { color: themeStyles.textColor }]}
-                  value={query}
-                  onChangeText={setQuery}
-                  placeholder={typeOfList === "MUSIC" ? "Buscar músicas no Spotify..." : "Buscar álbuns no Spotify..."}
-                  placeholderTextColor={themeStyles.subText}
-                  editable={!isAdding}
-                  autoCorrect={false}
+            {/* Header */}
+            <View style={styles.header}>
+              <Text style={[styles.title, { color: themeStyles.textColor }]}>
+                {typeOfList === "MUSIC"
+                  ? "Adicionar Músicas"
+                  : "Adicionar Álbum"}
+              </Text>
+              <Pressable
+                onPress={onClose}
+                disabled={isAdding}
+                style={styles.closeButton}
+              >
+                <MaterialIcons
+                  name="close"
+                  size={24}
+                  color={themeStyles.textColor}
                 />
-                {isSearching && (
-                  <ActivityIndicator size="small" color={themeStyles.textColor} style={styles.loaderIcon} />
-                )}
-              </View>
-
-              {/* Lista de Resultados */}
-              <FlatList
-                data={results}
-                keyExtractor={(item) => item.id}
-                renderItem={renderSpotifyItem}
-                style={styles.list}
-                contentContainerStyle={styles.listContent}
-                ListEmptyComponent={
-                  !isSearching && query.trim() !== "" ? (
-                    <View style={styles.emptyContainer}>
-                      <Text style={[styles.emptyText, { color: themeStyles.subText }]}>
-                        Nenhum resultado encontrado.
-                      </Text>
-                    </View>
-                  ) : null
-                }
-              />
+              </Pressable>
             </View>
-          </KeyboardAvoidingView>
-        </View>
-      </TouchableWithoutFeedback>
+
+            {/* Campo de Busca */}
+            <View
+              style={[
+                styles.searchContainer,
+                {
+                  backgroundColor: themeStyles.inputBg,
+                  borderColor: themeStyles.border,
+                },
+              ]}
+            >
+              <MaterialIcons
+                name="search"
+                size={20}
+                color={themeStyles.subText}
+                style={styles.searchIcon}
+              />
+              <TextInput
+                style={[styles.input, { color: themeStyles.textColor }]}
+                value={query}
+                onChangeText={setQuery}
+                placeholder={
+                  typeOfList === "MUSIC"
+                    ? "Buscar músicas no Spotify..."
+                    : "Buscar álbuns no Spotify..."
+                }
+                placeholderTextColor={themeStyles.subText}
+                editable={!isAdding}
+                autoCorrect={false}
+                autoFocus
+              />
+              {isSearching && (
+                <ActivityIndicator
+                  size="small"
+                  color={themeStyles.textColor}
+                  style={styles.loaderIcon}
+                />
+              )}
+            </View>
+
+            {/* Lista de Resultados */}
+            <FlatList
+              data={results}
+              keyExtractor={(item) => item.id}
+              renderItem={renderSpotifyItem}
+              style={styles.list}
+              contentContainerStyle={styles.listContent}
+              keyboardShouldPersistTaps="handled"
+              ListEmptyComponent={
+                !isSearching && query.trim() !== "" ? (
+                  <View style={styles.emptyContainer}>
+                    <Text
+                      style={[styles.emptyText, { color: themeStyles.subText }]}
+                    >
+                      Nenhum resultado encontrado.
+                    </Text>
+                  </View>
+                ) : null
+              }
+            />
+          </View>
+        </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 }

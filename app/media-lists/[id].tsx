@@ -15,6 +15,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Modal,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -39,6 +40,8 @@ export default function MediaListDetailScreen() {
   const [isNameModalVisible, setNameModalVisible] = useState(false);
   const [isPrivacyModalVisible, setPrivacyModalVisible] = useState(false);
   const [isAddMediaModalVisible, setAddMediaModalVisible] = useState(false);
+  const [isListOptionsVisible, setListOptionsVisible] = useState(false);
+  const [isDeleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
 
   const fetchDetail = async () => {
     if (!id) return;
@@ -114,33 +117,21 @@ export default function MediaListDetailScreen() {
     }
   };
 
-  const handleDeleteList = () => {
-    Alert.alert(
-      "Excluir Lista",
-      "Tem certeza que deseja excluir esta lista permanentemente? Esta ação não pode ser desfeita.",
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Excluir",
-          style: "destructive",
-          onPress: async () => {
-            setLoading(true);
-            try {
-              await apiClient.delete(`/mediaList/${id}`);
-              router.replace("/media-lists/user/me" as Href);
-            } catch (err) {
-              const normalized = err as NormalizedError;
-              Alert.alert(
-                "Erro",
-                normalized.message || "Não foi possível excluir a lista.",
-              );
-            } finally {
-              setLoading(false);
-            }
-          },
-        },
-      ],
-    );
+  const handleConfirmDeleteList = async () => {
+    setDeleteConfirmVisible(false);
+    setLoading(true);
+    try {
+      await apiClient.delete(`/mediaList/${id}`);
+      router.replace("/media-lists/user/me" as Href);
+    } catch (err) {
+      const normalized = err as NormalizedError;
+      Alert.alert(
+        "Erro",
+        normalized.message || "Não foi possível excluir a lista.",
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleRemoveMedia = async (mediaId: string) => {
@@ -157,6 +148,25 @@ export default function MediaListDetailScreen() {
         normalized.message || "Não foi possível remover a mídia da lista.",
       );
     }
+  };
+
+  const handleOpenListOptions = () => {
+    setListOptionsVisible(true);
+  };
+
+  const handleSelectEditName = () => {
+    setListOptionsVisible(false);
+    setNameModalVisible(true);
+  };
+
+  const handleSelectEditPrivacy = () => {
+    setListOptionsVisible(false);
+    setPrivacyModalVisible(true);
+  };
+
+  const handleSelectDeleteList = () => {
+    setListOptionsVisible(false);
+    setDeleteConfirmVisible(true);
   };
 
   if (loading) {
@@ -234,39 +244,6 @@ export default function MediaListDetailScreen() {
           headerStyle: { backgroundColor: themeStyles.cardBackground },
           headerTintColor: themeStyles.textColor,
           headerShadowVisible: false,
-          headerRight: () =>
-            isOwner ? (
-              <Pressable
-                onPress={() =>
-                  Alert.alert("Opções da Lista", "O que deseja fazer?", [
-                    {
-                      text: "Editar Nome",
-                      onPress: () => setNameModalVisible(true),
-                    },
-                    {
-                      text: "Editar Privacidade",
-                      onPress: () => setPrivacyModalVisible(true),
-                    },
-                    {
-                      text: "Excluir Lista",
-                      style: "destructive",
-                      onPress: handleDeleteList,
-                    },
-                    { text: "Cancelar", style: "cancel" },
-                  ])
-                }
-                style={({ pressed }) => [
-                  styles.headerButton,
-                  pressed && styles.pressed,
-                ]}
-              >
-                <MaterialIcons
-                  name="more-vert"
-                  size={24}
-                  color={themeStyles.textColor}
-                />
-              </Pressable>
-            ) : null,
         }}
       />
 
@@ -288,9 +265,33 @@ export default function MediaListDetailScreen() {
 
         {/* Título e Autor da Lista */}
         <View style={styles.metaContainer}>
-          <Text style={[styles.listName, { color: themeStyles.textColor }]}>
-            {publicData.listName}
-          </Text>
+          {/* Linha do título com o menu de opções do dono ao lado */}
+          <View style={styles.titleRow}>
+            <Text
+              style={[styles.listName, { color: themeStyles.textColor }]}
+              numberOfLines={2}
+            >
+              {publicData.listName}
+            </Text>
+
+            {isOwner && (
+              <Pressable
+                onPress={handleOpenListOptions}
+                style={({ pressed }) => [
+                  styles.optionsButton,
+                  { backgroundColor: themeStyles.badgeBg },
+                  pressed && styles.pressed,
+                ]}
+                hitSlop={8}
+              >
+                <MaterialIcons
+                  name="more-vert"
+                  size={22}
+                  color={themeStyles.textColor}
+                />
+              </Pressable>
+            )}
+          </View>
 
           <View style={styles.authorRow}>
             <MaterialIcons
@@ -506,6 +507,183 @@ export default function MediaListDetailScreen() {
             onClose={() => setAddMediaModalVisible(false)}
             onSuccess={setMediaList}
           />
+
+          {/* Menu de opções da lista (editar nome/privacidade/excluir).
+              Modal customizado em vez de Alert.alert, pois Alert.alert
+              não tem implementação visual no Expo Web. */}
+          <Modal
+            visible={isListOptionsVisible}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setListOptionsVisible(false)}
+          >
+            <Pressable
+              style={styles.modalOverlay}
+              onPress={() => setListOptionsVisible(false)}
+            >
+              <Pressable
+                style={[
+                  styles.optionsSheet,
+                  { backgroundColor: themeStyles.cardBackground },
+                ]}
+                onPress={(e) => e.stopPropagation()}
+              >
+                <Text
+                  style={[
+                    styles.optionsSheetTitle,
+                    { color: themeStyles.textColor },
+                  ]}
+                >
+                  Opções da Lista
+                </Text>
+
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.optionsSheetItem,
+                    pressed && styles.pressed,
+                  ]}
+                  onPress={handleSelectEditName}
+                >
+                  <MaterialIcons
+                    name="edit"
+                    size={20}
+                    color={themeStyles.textColor}
+                  />
+                  <Text
+                    style={[
+                      styles.optionsSheetItemText,
+                      { color: themeStyles.textColor },
+                    ]}
+                  >
+                    Editar Nome
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.optionsSheetItem,
+                    pressed && styles.pressed,
+                  ]}
+                  onPress={handleSelectEditPrivacy}
+                >
+                  <MaterialIcons
+                    name="lock-outline"
+                    size={20}
+                    color={themeStyles.textColor}
+                  />
+                  <Text
+                    style={[
+                      styles.optionsSheetItemText,
+                      { color: themeStyles.textColor },
+                    ]}
+                  >
+                    Editar Privacidade
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.optionsSheetItem,
+                    pressed && styles.pressed,
+                  ]}
+                  onPress={handleSelectDeleteList}
+                >
+                  <MaterialIcons name="delete" size={20} color="#EF4444" />
+                  <Text
+                    style={[styles.optionsSheetItemText, { color: "#EF4444" }]}
+                  >
+                    Excluir Lista
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.optionsSheetCancel,
+                    { borderColor: themeStyles.border },
+                    pressed && styles.pressed,
+                  ]}
+                  onPress={() => setListOptionsVisible(false)}
+                >
+                  <Text
+                    style={[
+                      styles.optionsSheetItemText,
+                      { color: themeStyles.subText },
+                    ]}
+                  >
+                    Cancelar
+                  </Text>
+                </Pressable>
+              </Pressable>
+            </Pressable>
+          </Modal>
+
+          {/* Confirmação de exclusão (também não usa Alert.alert) */}
+          <Modal
+            visible={isDeleteConfirmVisible}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setDeleteConfirmVisible(false)}
+          >
+            <Pressable
+              style={styles.modalOverlay}
+              onPress={() => setDeleteConfirmVisible(false)}
+            >
+              <Pressable
+                style={[
+                  styles.confirmCard,
+                  { backgroundColor: themeStyles.cardBackground },
+                ]}
+                onPress={(e) => e.stopPropagation()}
+              >
+                <Text
+                  style={[
+                    styles.optionsSheetTitle,
+                    { color: themeStyles.textColor },
+                  ]}
+                >
+                  Excluir Lista
+                </Text>
+                <Text
+                  style={[styles.confirmBody, { color: themeStyles.subText }]}
+                >
+                  Tem certeza que deseja excluir esta lista permanentemente?
+                  Esta ação não pode ser desfeita.
+                </Text>
+
+                <View style={styles.confirmActions}>
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.confirmButton,
+                      { backgroundColor: themeStyles.badgeBg },
+                      pressed && styles.pressed,
+                    ]}
+                    onPress={() => setDeleteConfirmVisible(false)}
+                  >
+                    <Text
+                      style={{
+                        color: themeStyles.textColor,
+                        fontWeight: "600",
+                      }}
+                    >
+                      Cancelar
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.confirmButton,
+                      { backgroundColor: "#EF4444" },
+                      pressed && styles.pressed,
+                    ]}
+                    onPress={handleConfirmDeleteList}
+                  >
+                    <Text style={{ color: "#FFFFFF", fontWeight: "600" }}>
+                      Excluir
+                    </Text>
+                  </Pressable>
+                </View>
+              </Pressable>
+            </Pressable>
+          </Modal>
         </>
       )}
     </SafeAreaView>
@@ -544,10 +722,25 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 20,
   },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    width: "100%",
+  },
+  optionsButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   listName: {
     fontSize: 24,
     fontWeight: "800",
     textAlign: "center",
+    flexShrink: 1,
   },
   authorRow: {
     flexDirection: "row",
@@ -595,9 +788,6 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   actionButton: {
-    padding: 6,
-  },
-  headerButton: {
     padding: 6,
   },
   pressed: {
@@ -690,5 +880,65 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontWeight: "600",
     fontSize: 14,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+  },
+  optionsSheet: {
+    width: "100%",
+    maxWidth: 360,
+    borderRadius: 16,
+    padding: 16,
+    gap: 4,
+  },
+  optionsSheetTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  optionsSheetItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+  },
+  optionsSheetItemText: {
+    fontSize: 15,
+    fontWeight: "500",
+  },
+  optionsSheetCancel: {
+    marginTop: 8,
+    paddingVertical: 12,
+    alignItems: "center",
+    borderTopWidth: 1,
+  },
+  confirmCard: {
+    width: "100%",
+    maxWidth: 360,
+    borderRadius: 16,
+    padding: 20,
+    gap: 8,
+  },
+  confirmBody: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 8,
+  },
+  confirmActions: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  confirmButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: "center",
   },
 });

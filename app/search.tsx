@@ -2,6 +2,7 @@ import {
   searchService,
   SpotifySearchResponseDTO,
 } from "@/src/service/searchApi";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -19,7 +20,7 @@ import {
 interface SearchIndexProps {}
 
 export default function SearchIndex({}: SearchIndexProps) {
-  const router = useRouter(); // 3. Inicialize o router
+  const router = useRouter();
   const [query, setQuery] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [results, setResults] = useState<SpotifySearchResponseDTO | null>(null);
@@ -55,13 +56,11 @@ export default function SearchIndex({}: SearchIndexProps) {
     const artistName = item.artists?.[0]?.name || "";
 
     if (item.type === "artist") {
-      // Navega para a página de artista
       router.push({
         pathname: "/artist/[id]",
         params: { id: item.id, name: displayName },
       });
     } else {
-      // Redireciona para a rota de criação de avaliação usando Expo Router
       router.push({
         pathname: "/ratings/create",
         params: {
@@ -75,11 +74,7 @@ export default function SearchIndex({}: SearchIndexProps) {
   };
 
   const renderItem = ({ item }: { item: any }) => {
-    console.log(`[${item.type}]`, JSON.stringify(item, null, 2));
-    let imageUrl = null;
-
-    imageUrl = item.coverURL || item.profilePictureURL || null;
-
+    let imageUrl = item.coverURL || item.profilePictureURL || null;
     const displayTitle = item.name;
     let displaySubtitle = "";
 
@@ -144,17 +139,33 @@ export default function SearchIndex({}: SearchIndexProps) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.headerTitle}>Explorar</Text>
+      {/* Novo Cabeçalho com Botão de Voltar e Input de Busca */}
+      <View style={styles.headerContainer}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Ionicons name="arrow-back" size={26} color="#FFF" />
+        </TouchableOpacity>
 
-      <View style={styles.searchBarContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Buscar álbuns, artistas, músicas..."
-          placeholderTextColor="#A8A8B3"
-          value={query}
-          onChangeText={setQuery}
-          clearButtonMode="while-editing"
-        />
+        <View style={styles.searchInputContainer}>
+          <Ionicons
+            name="search"
+            size={20}
+            color="#A8A8B3"
+            style={styles.searchIcon}
+          />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Buscar músicas, artistas, álbuns..."
+            placeholderTextColor="#A8A8B3"
+            value={query}
+            onChangeText={setQuery}
+            clearButtonMode="while-editing"
+            autoFocus={true} // Opcional: já abre o teclado ao entrar na tela
+          />
+        </View>
       </View>
 
       {loading && (
@@ -184,33 +195,39 @@ export default function SearchIndex({}: SearchIndexProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#121214",
+    backgroundColor: "#121212", // Tom escuro semelhante ao da imagem
+  },
+  headerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 16,
   },
-  headerTitle: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: "#FFF",
-    marginTop: 20,
-    marginBottom: 16,
+  backButton: {
+    marginRight: 16,
   },
-  searchBarContainer: {
-    backgroundColor: "#202024",
+  searchInputContainer: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#242424", // Fundo do input levemente mais claro que o fundo
     borderRadius: 8,
-    paddingHorizontal: 16,
-    height: 52,
-    justifyContent: "center",
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: "#29292e",
+    paddingHorizontal: 12,
+    height: 44, // Altura confortável para toque
+  },
+  searchIcon: {
+    marginRight: 8,
   },
   searchInput: {
+    flex: 1,
     color: "#FFF",
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "500",
   },
   listContainer: {
     paddingBottom: 24,
+    paddingHorizontal: 16, // Movemos o padding horizontal do container para cá
   },
   card: {
     flexDirection: "row",
@@ -219,24 +236,24 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   cardImageSquare: {
-    width: 60,
-    height: 60,
+    width: 56, // Tamanho um pouco mais refinado
+    height: 56,
     borderRadius: 4,
   },
   cardImageRound: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 56,
+    height: 56,
+    borderRadius: 28, // Metade exata para ficar um círculo perfeito
   },
   cardInfo: {
-    marginLeft: 16,
+    marginLeft: 14,
     flex: 1,
     justifyContent: "center",
   },
   cardTitle: {
     color: "#FFF",
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "500",
     marginBottom: 4,
   },
   cardSubtitle: {
@@ -245,7 +262,7 @@ const styles = StyleSheet.create({
     fontWeight: "400",
   },
   emptyText: {
-    color: "#777",
+    color: "#A8A8B3",
     textAlign: "center",
     marginTop: 40,
     fontSize: 15,

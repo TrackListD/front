@@ -94,16 +94,11 @@ export default function HeaderNavbar() {
             <Ionicons name="search-outline" size={22} color="#FFFFFF" />
           </TouchableOpacity>
 
-
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.iconButton}
             onPress={() => router.push("/faq")}
           >
             <Ionicons name="help-circle-outline" size={24} color="#FFFFFF" />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.iconButton}>
-            <Ionicons name="settings-outline" size={22} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
       </View>

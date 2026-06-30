@@ -21,6 +21,7 @@ export interface FeedItem {
   author: Author;
   likesCount: number;
   likedByMe: boolean;
+  commentsCount: number;
   media: Media | null;
   authorFollowedByAuthUser: boolean;
   mediaList?: MediaMin[];

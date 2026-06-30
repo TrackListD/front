@@ -6,6 +6,7 @@ import EditPrivacyModal from "@/src/components/EditPrivacyModal";
 import EditReviewModal from "@/src/components/EditReviewModal";
 import { StarRating } from "@/src/components/StarRating";
 import apiClient, { NormalizedError } from "@/src/service/api";
+import { toggleLike } from "@/src/service/feedApi";
 import {
   RatingDetailResponse,
   RatingResponseDto,
@@ -41,6 +42,13 @@ export default function RatingDetailScreen() {
   const [showEditNote, setShowEditNote] = useState(false);
   const [showEditPrivacy, setShowEditPrivacy] = useState(false);
 
+  // Estado de like (otimista). OBS: o backend ainda não retorna `likedByMe`
+  // em RatingResponseDto, então iniciamos como `false` e confiamos na
+  // resposta de toggleLike() para refletir o estado real após a 1ª curtida.
+  // Quando o backend expuser likedByMe, basta inicializar a partir dele aqui.
+  const [liked, setLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
+
   useEffect(() => {
     const fetchRatingDetail = async () => {
       if (!id) return;
@@ -57,6 +65,13 @@ export default function RatingDetailScreen() {
           JSON.stringify(response.data, null, 2),
         );
         setRating(response.data);
+
+        const fetchedPublicData =
+          (response.data as any).publicData ||
+          (response.data as any).publicDto ||
+          response.data;
+        setLikeCount(fetchedPublicData.likeCount ?? 0);
+        setLiked(!!(fetchedPublicData as any).likedByMe);
       } catch (err) {
         setError(err as NormalizedError);
       } finally {
@@ -81,6 +96,7 @@ export default function RatingDetailScreen() {
     errorBorder: isDark ? "#5C1E1E" : "#FCA5A5",
     errorText: isDark ? "#F87171" : "#B91C1C",
     avatarBg: isDark ? "#334155" : "#E2E8F0",
+    likeColor: "#EF4444",
   };
 
   const translateStatus = (status: string) => {
@@ -110,6 +126,25 @@ export default function RatingDetailScreen() {
         return { label: "Privado", icon: "lock" };
       default:
         return { label: privacy, icon: "visibility" };
+    }
+  };
+
+  // Toggle de curtida (publication like), mesmo padrão otimista do FeedList.
+  const handleToggleLike = async () => {
+    if (!id) return;
+
+    const wasLiked = liked;
+    setLiked(!wasLiked);
+    setLikeCount((prev) => (wasLiked ? prev - 1 : prev + 1));
+
+    try {
+      const result = await toggleLike(Number(id));
+      setLiked(result.liked);
+      setLikeCount(result.likesCount);
+    } catch (err) {
+      console.error("Erro ao curtir avaliação:", id, err);
+      setLiked(wasLiked);
+      setLikeCount((prev) => (wasLiked ? prev + 1 : prev - 1));
     }
   };
 
@@ -189,6 +224,16 @@ export default function RatingDetailScreen() {
     );
   }
 
+  const handleReport = () => {
+    router.push({
+      pathname: "/reportModal",
+      params: {
+        commentId: publicData.id,
+        userTargetId: publicData.author.id,
+      },
+    });
+  };
+
   return (
     <SafeAreaView
       style={[styles.safeArea, { backgroundColor: themeStyles.background }]}
@@ -212,25 +257,35 @@ export default function RatingDetailScreen() {
           {/* Header Row: Author Info */}
           <View style={styles.authorHeader}>
             <View style={styles.authorMeta}>
-              <View
-                style={[
-                  styles.avatar,
-                  { backgroundColor: themeStyles.avatarBg },
-                ]}
-              >
-                <Text
-                  style={[styles.avatarText, { color: themeStyles.textColor }]}
+              {publicData.author.profilePic ? (
+                <Image
+                  source={{ uri: publicData.author.profilePic }}
+                  style={styles.avatarImage}
+                />
+              ) : (
+                <View
+                  style={[
+                    styles.avatar,
+                    { backgroundColor: themeStyles.avatarBg },
+                  ]}
                 >
-                  {publicData.authorName
-                    ? publicData.authorName.charAt(0).toUpperCase()
-                    : "?"}
-                </Text>
-              </View>
+                  <Text
+                    style={[
+                      styles.avatarText,
+                      { color: themeStyles.textColor },
+                    ]}
+                  >
+                    {publicData.author.name
+                      ? publicData.author.name.charAt(0).toUpperCase()
+                      : "?"}
+                  </Text>
+                </View>
+              )}
               <View>
                 <Text
                   style={[styles.authorName, { color: themeStyles.textColor }]}
                 >
-                  {publicData.authorName}
+                  {publicData.author.name}
                 </Text>
                 <Text style={[styles.dateText, { color: themeStyles.subText }]}>
                   Publicado em {formatDateBR(publicData.publicationDate)}
@@ -467,28 +522,39 @@ export default function RatingDetailScreen() {
             </View>
           )}
 
-          {/* Interaction counters (Likes / Comments) */}
+          {/* Interaction counters (Like / Comments / Report) */}
           <View
             style={[styles.divider, { backgroundColor: themeStyles.border }]}
           />
 
           <View style={styles.interactionRow}>
-            <View style={styles.interactionItem}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.interactionItem,
+                pressed && styles.pressed,
+              ]}
+              onPress={handleToggleLike}
+              hitSlop={8}
+            >
               <MaterialIcons
-                name="thumb-up-off-alt"
+                name={liked ? "favorite" : "favorite-border"}
                 size={20}
-                color={themeStyles.subText}
+                color={liked ? themeStyles.likeColor : themeStyles.subText}
               />
               <Text
                 style={[
                   styles.interactionText,
-                  { color: themeStyles.textColor },
+                  {
+                    color: liked
+                      ? themeStyles.likeColor
+                      : themeStyles.textColor,
+                  },
                 ]}
               >
-                {publicData.likeCount}{" "}
-                {publicData.likeCount === 1 ? "Curtida" : "Curtidas"}
+                {likeCount} {likeCount === 1 ? "Curtida" : "Curtidas"}
               </Text>
-            </View>
+            </Pressable>
+
             <View style={styles.interactionItem}>
               <MaterialIcons
                 name="chat-bubble-outline"
@@ -505,6 +571,29 @@ export default function RatingDetailScreen() {
                 {publicData.commentCount === 1 ? "Comentário" : "Comentários"}
               </Text>
             </View>
+
+            <Pressable
+              style={({ pressed }) => [
+                styles.interactionItem,
+                pressed && styles.pressed,
+              ]}
+              onPress={handleReport}
+              hitSlop={8}
+            >
+              <MaterialIcons
+                name="flag"
+                size={20}
+                color={themeStyles.subText}
+              />
+              <Text
+                style={[
+                  styles.interactionText,
+                  { color: themeStyles.textColor },
+                ]}
+              >
+                Denunciar
+              </Text>
+            </Pressable>
           </View>
         </View>
 
@@ -625,6 +714,11 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     justifyContent: "center",
     alignItems: "center",
+  },
+  avatarImage: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
   },
   avatarText: {
     fontSize: 18,

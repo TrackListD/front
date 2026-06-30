@@ -5,7 +5,7 @@ export type ListType = "ALBUM" | "MUSIC";
 export type Privacy = "PUBLIC" | "JUST_FOLLOWERS" | "PRIVATE";
 
 export interface MediaListResponseDto {
-  id: number; // ⚠️ FUTURA INTEGRAÇÃO: campo ausente no backend, necessário para navegação e operações CRUD
+  id: number;
   typeOfList: ListType;
   listName: string;
   isFavorite: boolean;
@@ -14,6 +14,8 @@ export interface MediaListResponseDto {
   medias: MediaMinDto[];
   totalDurationMs: number;
   formattedDuration: string;
+  likeCount: number;
+  commentCount: number;
 }
 
 export interface MediaListOwnerResponseDto {

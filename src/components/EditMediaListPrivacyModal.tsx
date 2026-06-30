@@ -1,17 +1,17 @@
-// Componente: Modal de edição de privacidade da lista via PATCH /api/mediaList/{id}/privacy
-import React, { useState, useEffect } from "react";
-import {
-  Modal,
-  View,
-  Text,
-  StyleSheet,
-  Pressable,
-  ActivityIndicator,
-} from "react-native";
+// Componente: Modal de edição de privacidade da lista via PATCH /mediaList/{id}/privacy
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import apiClient, { NormalizedError } from "@/src/service/apiClient";
-import { Privacy, MediaListOwnerResponseDto } from "@/src/types/mediaList";
+import apiClient, { NormalizedError } from "@/src/service/api";
+import { MediaListOwnerResponseDto, Privacy } from "@/src/types/mediaList";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
 interface EditMediaListPrivacyModalProps {
   visible: boolean;
@@ -60,8 +60,8 @@ export default function EditMediaListPrivacyModal({
     setError(null);
     try {
       const response = await apiClient.patch<MediaListOwnerResponseDto>(
-        `/api/mediaList/${listId}/privacy`,
-        { newPrivacy: privacy }
+        `/mediaList/${listId}/privacy`,
+        { newPrivacy: privacy },
       );
       onSuccess(response.data);
       onClose();
@@ -73,7 +73,11 @@ export default function EditMediaListPrivacyModal({
     }
   };
 
-  const renderOption = (value: Privacy, label: string, icon: "public" | "people" | "lock") => {
+  const renderOption = (
+    value: Privacy,
+    label: string,
+    icon: "public" | "people" | "lock",
+  ) => {
     const isSelected = privacy === value;
     return (
       <Pressable
@@ -82,8 +86,12 @@ export default function EditMediaListPrivacyModal({
         style={[
           styles.selectorButton,
           {
-            borderColor: isSelected ? themeStyles.tintColor : themeStyles.border,
-            backgroundColor: isSelected ? themeStyles.selectedBg : themeStyles.modalBackground,
+            borderColor: isSelected
+              ? themeStyles.tintColor
+              : themeStyles.border,
+            backgroundColor: isSelected
+              ? themeStyles.selectedBg
+              : themeStyles.modalBackground,
           },
         ]}
       >
@@ -95,7 +103,9 @@ export default function EditMediaListPrivacyModal({
         <Text
           style={[
             styles.selectorButtonText,
-            { color: isSelected ? themeStyles.tintColor : themeStyles.textColor },
+            {
+              color: isSelected ? themeStyles.tintColor : themeStyles.textColor,
+            },
           ]}
         >
           {label}
@@ -111,22 +121,44 @@ export default function EditMediaListPrivacyModal({
       animationType="fade"
       onRequestClose={onClose}
     >
-      <View style={[styles.backdrop, { backgroundColor: themeStyles.backdrop }]}>
-        <View style={[styles.modalCard, { backgroundColor: themeStyles.modalBackground }]}>
+      <View
+        style={[styles.backdrop, { backgroundColor: themeStyles.backdrop }]}
+      >
+        <View
+          style={[
+            styles.modalCard,
+            { backgroundColor: themeStyles.modalBackground },
+          ]}
+        >
           {/* Cabeçalho */}
           <View style={styles.header}>
             <Text style={[styles.title, { color: themeStyles.textColor }]}>
               Editar Privacidade
             </Text>
-            <Pressable onPress={onClose} disabled={loading} style={styles.closeButton}>
-              <MaterialIcons name="close" size={24} color={themeStyles.textColor} />
+            <Pressable
+              onPress={onClose}
+              disabled={loading}
+              style={styles.closeButton}
+            >
+              <MaterialIcons
+                name="close"
+                size={24}
+                color={themeStyles.textColor}
+              />
             </Pressable>
           </View>
 
           {/* Alerta de erro */}
           {error && (
-            <View style={[styles.errorContainer, { backgroundColor: themeStyles.errorBg }]}>
-              <Text style={[styles.errorText, { color: themeStyles.errorText }]}>
+            <View
+              style={[
+                styles.errorContainer,
+                { backgroundColor: themeStyles.errorBg },
+              ]}
+            >
+              <Text
+                style={[styles.errorText, { color: themeStyles.errorText }]}
+              >
                 {error}
               </Text>
             </View>
@@ -142,17 +174,27 @@ export default function EditMediaListPrivacyModal({
           {/* Ações do Rodapé */}
           <View style={styles.footer}>
             <Pressable
-              style={[styles.button, styles.buttonCancel, { backgroundColor: themeStyles.buttonCancelBg }]}
+              style={[
+                styles.button,
+                styles.buttonCancel,
+                { backgroundColor: themeStyles.buttonCancelBg },
+              ]}
               onPress={onClose}
               disabled={loading}
             >
-              <Text style={[styles.buttonText, { color: themeStyles.textColor }]}>
+              <Text
+                style={[styles.buttonText, { color: themeStyles.textColor }]}
+              >
                 Cancelar
               </Text>
             </Pressable>
 
             <Pressable
-              style={[styles.button, styles.buttonSave, { backgroundColor: themeStyles.tintColor }]}
+              style={[
+                styles.button,
+                styles.buttonSave,
+                { backgroundColor: themeStyles.tintColor },
+              ]}
               onPress={handleSave}
               disabled={loading}
             >

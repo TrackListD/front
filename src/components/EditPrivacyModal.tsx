@@ -1,18 +1,18 @@
-// Componente: Modal de edição de privacidade — permite ao dono alterar a visibilidade da avaliação via PATCH /api/ratings/{id}/privacy
-import React, { useState, useEffect } from "react";
-import {
-  Modal,
-  View,
-  Text,
-  StyleSheet,
-  Pressable,
-  ActivityIndicator,
-  TouchableWithoutFeedback,
-} from "react-native";
+// Componente: Modal de edição de privacidade — permite ao dono alterar a visibilidade da avaliação via PATCH /ratings/{id}/privacy
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import apiClient, { NormalizedError } from "@/src/service/apiClient";
+import apiClient, { NormalizedError } from "@/src/service/api";
 import { RatingOwnerResponseDto } from "@/src/types/rating";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  TouchableWithoutFeedback,
+  View,
+} from "react-native";
 
 type PrivacyOption = "PUBLIC" | "JUST_FOLLOWERS" | "PRIVATE";
 
@@ -71,8 +71,8 @@ export default function EditPrivacyModal({
     setError(null);
     try {
       const response = await apiClient.patch<RatingOwnerResponseDto>(
-        `/api/ratings/${ratingId}/privacy`,
-        { newPrivacy: privacy }
+        `/ratings/${ratingId}/privacy`,
+        { newPrivacy: privacy },
       );
       onSuccess(response.data);
       onClose();
@@ -92,23 +92,45 @@ export default function EditPrivacyModal({
       onRequestClose={onClose}
     >
       <TouchableWithoutFeedback onPress={onClose}>
-        <View style={[styles.backdrop, { backgroundColor: themeStyles.backdrop }]}>
+        <View
+          style={[styles.backdrop, { backgroundColor: themeStyles.backdrop }]}
+        >
           <TouchableWithoutFeedback>
-            <View style={[styles.modalCard, { backgroundColor: themeStyles.modalBackground }]}>
+            <View
+              style={[
+                styles.modalCard,
+                { backgroundColor: themeStyles.modalBackground },
+              ]}
+            >
               {/* Cabeçalho */}
               <View style={styles.header}>
                 <Text style={[styles.title, { color: themeStyles.textColor }]}>
                   Editar Privacidade
                 </Text>
-                <Pressable onPress={onClose} disabled={loading} style={styles.closeButton}>
-                  <MaterialIcons name="close" size={24} color={themeStyles.textColor} />
+                <Pressable
+                  onPress={onClose}
+                  disabled={loading}
+                  style={styles.closeButton}
+                >
+                  <MaterialIcons
+                    name="close"
+                    size={24}
+                    color={themeStyles.textColor}
+                  />
                 </Pressable>
               </View>
 
               {/* Alerta de erro */}
               {error && (
-                <View style={[styles.errorContainer, { backgroundColor: themeStyles.errorBg }]}>
-                  <Text style={[styles.errorText, { color: themeStyles.errorText }]}>
+                <View
+                  style={[
+                    styles.errorContainer,
+                    { backgroundColor: themeStyles.errorBg },
+                  ]}
+                >
+                  <Text
+                    style={[styles.errorText, { color: themeStyles.errorText }]}
+                  >
                     {error}
                   </Text>
                 </View>
@@ -116,7 +138,12 @@ export default function EditPrivacyModal({
 
               {/* Seletor Segmentado (Padrão visual do whoCanSee em create.tsx) */}
               <View style={styles.segmentedWrapper}>
-                <View style={[styles.segmentedContainer, { backgroundColor: themeStyles.segmentedBg }]}>
+                <View
+                  style={[
+                    styles.segmentedContainer,
+                    { backgroundColor: themeStyles.segmentedBg },
+                  ]}
+                >
                   {visibilityOptions.map((opt) => {
                     const isSelected = privacy === opt.value;
                     return (
@@ -135,13 +162,21 @@ export default function EditPrivacyModal({
                         <MaterialIcons
                           name={opt.icon}
                           size={16}
-                          color={isSelected ? themeStyles.tintColor : themeStyles.subText}
+                          color={
+                            isSelected
+                              ? themeStyles.tintColor
+                              : themeStyles.subText
+                          }
                           style={styles.segmentedIcon}
                         />
                         <Text
                           style={[
                             styles.segmentedText,
-                            { color: isSelected ? themeStyles.textColor : themeStyles.subText },
+                            {
+                              color: isSelected
+                                ? themeStyles.textColor
+                                : themeStyles.subText,
+                            },
                             isSelected && styles.segmentedTextActive,
                           ]}
                         >
@@ -156,17 +191,30 @@ export default function EditPrivacyModal({
               {/* Ações do Rodapé */}
               <View style={styles.footer}>
                 <Pressable
-                  style={[styles.button, styles.buttonCancel, { backgroundColor: themeStyles.buttonCancelBg }]}
+                  style={[
+                    styles.button,
+                    styles.buttonCancel,
+                    { backgroundColor: themeStyles.buttonCancelBg },
+                  ]}
                   onPress={onClose}
                   disabled={loading}
                 >
-                  <Text style={[styles.buttonText, { color: themeStyles.textColor }]}>
+                  <Text
+                    style={[
+                      styles.buttonText,
+                      { color: themeStyles.textColor },
+                    ]}
+                  >
                     Cancelar
                   </Text>
                 </Pressable>
 
                 <Pressable
-                  style={[styles.button, styles.buttonSave, { backgroundColor: themeStyles.tintColor }]}
+                  style={[
+                    styles.button,
+                    styles.buttonSave,
+                    { backgroundColor: themeStyles.tintColor },
+                  ]}
                   onPress={handleSave}
                   disabled={loading}
                 >

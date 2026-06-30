@@ -7,11 +7,7 @@ import EditReviewModal from "@/src/components/EditReviewModal";
 import { StarRating } from "@/src/components/StarRating";
 import apiClient, { NormalizedError } from "@/src/service/api";
 import { toggleLike } from "@/src/service/feedApi";
-import {
-  RatingDetailResponse,
-  RatingResponseDto,
-  isOwnerResponse,
-} from "@/src/types/rating";
+import { RatingDetailResponse, RatingResponseDto } from "@/src/types/rating";
 import { formatDateBR } from "@/src/utils/dateUtils";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { Href, Stack, router, useLocalSearchParams } from "expo-router";
@@ -42,12 +38,20 @@ export default function RatingDetailScreen() {
   const [showEditNote, setShowEditNote] = useState(false);
   const [showEditPrivacy, setShowEditPrivacy] = useState(false);
 
-  // Estado de like (otimista). OBS: o backend ainda não retorna `likedByMe`
-  // em RatingResponseDto, então iniciamos como `false` e confiamos na
-  // resposta de toggleLike() para refletir o estado real após a 1ª curtida.
-  // Quando o backend expuser likedByMe, basta inicializar a partir dele aqui.
+  // Estado de curtida sincronizado com o backend
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
+
+  // Função auxiliar para extrair e sincronizar as propriedades de curtida dos DTOs recebidos
+  const syncLikeStates = (data: RatingDetailResponse) => {
+    const fetchedPublicData =
+      (data as any).publicData || (data as any).publicDto || data;
+
+    if (fetchedPublicData) {
+      setLikeCount(fetchedPublicData.likeCount ?? 0);
+      setLiked(!!fetchedPublicData.likedByMe);
+    }
+  };
 
   useEffect(() => {
     const fetchRatingDetail = async () => {
@@ -65,13 +69,7 @@ export default function RatingDetailScreen() {
           JSON.stringify(response.data, null, 2),
         );
         setRating(response.data);
-
-        const fetchedPublicData =
-          (response.data as any).publicData ||
-          (response.data as any).publicDto ||
-          response.data;
-        setLikeCount(fetchedPublicData.likeCount ?? 0);
-        setLiked(!!(fetchedPublicData as any).likedByMe);
+        syncLikeStates(response.data);
       } catch (err) {
         setError(err as NormalizedError);
       } finally {
@@ -129,7 +127,7 @@ export default function RatingDetailScreen() {
     }
   };
 
-  // Toggle de curtida (publication like), mesmo padrão otimista do FeedList.
+  // Toggle de curtida (publication like) usando atualização otimista
   const handleToggleLike = async () => {
     if (!id) return;
 
@@ -146,6 +144,11 @@ export default function RatingDetailScreen() {
       setLiked(wasLiked);
       setLikeCount((prev) => (wasLiked ? prev + 1 : prev - 1));
     }
+  };
+
+  const handleUpdateRating = (updatedData: RatingDetailResponse) => {
+    setRating(updatedData);
+    syncLikeStates(updatedData);
   };
 
   // 1. Loading State
@@ -203,14 +206,12 @@ export default function RatingDetailScreen() {
   }
 
   // 3. Normalizing access (discrimination helper)
-  const isOwner = isOwnerResponse(rating);
+  const isOwner = !!rating && ("publicData" in rating || "publicDto" in rating);
 
-  // Alvo correto: Se existir "publicData" ou "publicDto" dentro do objeto retornado, usamos ele!
   const publicData: RatingResponseDto = rating
     ? (rating as any).publicData || (rating as any).publicDto || rating
     : null;
 
-  // Verificação de segurança adicional para garantir que a mídia carregou
   if (!publicData || !publicData.targetMedia) {
     return (
       <SafeAreaView
@@ -293,7 +294,6 @@ export default function RatingDetailScreen() {
               </View>
             </View>
 
-            {/* If Owner: Status badge on the top right */}
             {isOwner && (
               <View
                 style={[
@@ -412,7 +412,6 @@ export default function RatingDetailScreen() {
                 {publicData.ratingNote.toFixed(1)} / 5.0
               </Text>
 
-              {/* If Owner: Pencil icon to edit note */}
               {isOwner && (
                 <Pressable
                   style={({ pressed }) => [
@@ -440,7 +439,6 @@ export default function RatingDetailScreen() {
                 Resenha
               </Text>
 
-              {/* If Owner: Pencil icon to edit review text */}
               {isOwner && (
                 <Pressable
                   style={({ pressed }) => [
@@ -654,21 +652,21 @@ export default function RatingDetailScreen() {
             onClose={() => setShowEditReview(false)}
             currentReview={publicData.review || ""}
             ratingId={Number(id)}
-            onSuccess={setRating}
+            onSuccess={handleUpdateRating}
           />
           <EditNoteModal
             visible={showEditNote}
             onClose={() => setShowEditNote(false)}
             currentNote={publicData.ratingNote}
             ratingId={Number(id)}
-            onSuccess={setRating}
+            onSuccess={handleUpdateRating}
           />
           <EditPrivacyModal
             visible={showEditPrivacy}
             onClose={() => setShowEditPrivacy(false)}
             currentPrivacy={rating.whoCanSee}
             ratingId={Number(id)}
-            onSuccess={setRating}
+            onSuccess={handleUpdateRating}
           />
         </>
       )}

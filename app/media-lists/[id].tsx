@@ -564,7 +564,9 @@ export default function MediaListDetailScreen() {
                       />
                     )}
                   </View>
-                  <View style={styles.mediaInfo}>
+
+                  {/* Mudamos para garantir que a info não passe por cima da lixeira */}
+                  <View style={[styles.mediaInfo, { marginRight: 8 }]}>
                     <Text
                       style={[
                         styles.mediaTitle,
@@ -584,32 +586,51 @@ export default function MediaListDetailScreen() {
                       {media.artist} • {media.formattedDuration}
                     </Text>
                   </View>
-                  <Pressable
-                    onPress={() => {
-                      if (isOwner) {
-                        Alert.alert("Opções da Mídia", "O que deseja fazer?", [
-                          {
-                            text: "Remover da Lista",
-                            style: "destructive",
-                            onPress: () => handleRemoveMedia(media.id),
-                          },
-                          { text: "Cancelar", style: "cancel" },
-                        ]);
-                      } else {
-                        Alert.alert(
-                          "Opções da Mídia",
-                          "Sem opções adicionais disponíveis.",
-                        );
-                      }
-                    }}
-                    style={styles.moreButton}
-                  >
-                    <MaterialIcons
-                      name="more-vert"
-                      size={20}
-                      color={themeStyles.subText}
-                    />
-                  </Pressable>
+
+                  {isOwner ? (
+                    <Pressable
+                      onPress={() => {
+                        console.log("Lixeira clicada para a mídia:", media.id);
+
+                        // Se estiver rodando no navegador (Expo Web), usa o confirm do sistema
+                        if (typeof window !== "undefined" && window.confirm) {
+                          const confirmed = window.confirm(
+                            `Deseja remover "${media.title}" desta lista?`,
+                          );
+                          if (confirmed) {
+                            handleRemoveMedia(media.id);
+                          }
+                        } else {
+                          // Se estiver no celular (iOS/Android), usa o Alert nativo lindão
+                          Alert.alert(
+                            "Remover Mídia",
+                            `Deseja remover "${media.title}" desta lista?`,
+                            [
+                              { text: "Cancelar", style: "cancel" },
+                              {
+                                text: "Remover",
+                                style: "destructive",
+                                onPress: () => handleRemoveMedia(media.id),
+                              },
+                            ],
+                          );
+                        }
+                      }}
+                      // Adicionado feedback visual de opacidade ao tocar, assim você sabe se o clique funcionou
+                      style={({ pressed }) => [
+                        styles.moreButton,
+                        pressed && styles.pressed,
+                        { padding: 10 }, // Aumenta a área física do clique
+                      ]}
+                      hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} // Expande a área invisível do clique
+                    >
+                      <MaterialIcons
+                        name="delete-outline"
+                        size={22}
+                        color="#EF4444"
+                      />
+                    </Pressable>
+                  ) : null}
                 </View>
               ))}
             </View>

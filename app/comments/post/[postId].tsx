@@ -124,6 +124,21 @@ export default function PostCommentsScreen() {
   };
 
   const handleDeleteComment = (commentId: number) => {
+    console.log("=> BOTÃO DELETAR VIA PRESSABLE FOI CLICADO! ID:", commentId);
+
+    // Se estiver rodando na Web, o Alert.alert nativo falha silenciosamente.
+    // Usamos o window.confirm nativo do navegador para contornar isso.
+    if (Platform.OS === "web") {
+      const confirmar = window.confirm(
+        "Tem certeza que deseja excluir este comentário?",
+      );
+      if (confirmar) {
+        executarDelecao(commentId);
+      }
+      return;
+    }
+
+    // Código para dispositivos móveis (iOS / Android)
     Alert.alert(
       "Excluir Comentário",
       "Tem certeza que deseja excluir este comentário?",
@@ -132,21 +147,39 @@ export default function PostCommentsScreen() {
         {
           text: "Excluir",
           style: "destructive",
-          onPress: async () => {
-            try {
-              await apiClient.delete(`/comments/${commentId}`);
-              setComments((prev) => prev.filter((c) => c.id !== commentId));
-            } catch (err) {
-              const normalized = err as NormalizedError;
-              Alert.alert(
-                "Erro",
-                normalized.message || "Erro ao excluir o comentário.",
-              );
-            }
-          },
+          onPress: () => executarDelecao(commentId),
         },
       ],
     );
+  };
+
+  // Nova função isolada para fazer a requisição à API
+  const executarDelecao = async (commentId: number) => {
+    try {
+      console.log("==> ENVIANDO REQUISIÇÃO DELETE PARA O BACKEND...");
+
+      // Faz a chamada para a API utilizando o seu apiClient
+      await apiClient.delete(`/comments/${commentId}`);
+
+      console.log("==> COMENTÁRIO EXCLUÍDO COM SUCESSO NO BACKEND!");
+
+      // Atualiza o estado local para sumir com o comentário da tela na hora
+      setComments((prev) => prev.filter((c) => c.id !== commentId));
+    } catch (err) {
+      const normalized = err as NormalizedError;
+      console.error("==> ERRO RETORNADO DO SPRING BOOT:", err);
+
+      if (Platform.OS === "web") {
+        window.alert(
+          `Erro ao deletar: ${normalized.message || "Erro desconhecido"}`,
+        );
+      } else {
+        Alert.alert(
+          "Erro ao Deletar",
+          `Status: ${normalized.status}\nMensagem: ${normalized.message}`,
+        );
+      }
+    }
   };
 
   const handleToggleCommentLike = async (commentId: number) => {
@@ -207,7 +240,9 @@ export default function PostCommentsScreen() {
   };
 
   const renderCommentCard = ({ item }: { item: CommentResponseDto }) => {
-    const isOwner = currentUserId !== null && item.author.id === currentUserId;
+    const isOwner =
+      currentUserId !== null &&
+      String(item.author.id) === String(currentUserId);
 
     return (
       <View

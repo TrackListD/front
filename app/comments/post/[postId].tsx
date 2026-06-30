@@ -13,6 +13,7 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -206,7 +207,7 @@ export default function PostCommentsScreen() {
   };
 
   const renderCommentCard = ({ item }: { item: CommentResponseDto }) => {
-    const isOwner = currentUserId !== null && item.idAuthor === currentUserId;
+    const isOwner = currentUserId !== null && item.author.id === currentUserId;
 
     return (
       <View
@@ -220,20 +221,30 @@ export default function PostCommentsScreen() {
       >
         <View style={styles.cardHeader}>
           <View style={styles.authorContainer}>
-            <View
-              style={[styles.avatar, { backgroundColor: themeStyles.avatarBg }]}
-            >
-              <Text
-                style={[styles.avatarText, { color: themeStyles.textColor }]}
+            {item.author.profilePic ? (
+              <Image
+                source={{ uri: item.author.profilePic }}
+                style={styles.avatar}
+              />
+            ) : (
+              <View
+                style={[
+                  styles.avatar,
+                  { backgroundColor: themeStyles.avatarBg },
+                ]}
               >
-                U
-              </Text>
-            </View>
+                <Text
+                  style={[styles.avatarText, { color: themeStyles.textColor }]}
+                >
+                  {item.author.name.charAt(0).toUpperCase()}
+                </Text>
+              </View>
+            )}
             <View>
               <Text
                 style={[styles.authorName, { color: themeStyles.textColor }]}
               >
-                Usuário #{item.idAuthor}
+                {item.author.name}
               </Text>
               <Text style={[styles.dateText, { color: themeStyles.subText }]}>
                 {formatDateBR(item.commentDate)}
@@ -557,6 +568,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     justifyContent: "center",
     alignItems: "center",
+    overflow: "hidden",
   },
   avatarText: {
     fontSize: 15,

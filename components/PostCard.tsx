@@ -121,6 +121,10 @@ export default function PostCard({
     router.push(`/media-lists/${item.id}` as Href);
   };
 
+  const goToComments = () => {
+    router.push(`/comments/post/${item.id}` as Href);
+  };
+
   return (
     <View style={styles.postContainer}>
       {/* Cabeçalho do Post */}
@@ -197,6 +201,7 @@ export default function PostCard({
           const previewCovers = mediaItems.slice(0, 4);
           const previewTracks = mediaItems.slice(0, 2);
           const remainingCount = mediaItems.length - previewTracks.length;
+          const hasCover = !!item.coverImageUrl;
 
           return (
             <TouchableOpacity
@@ -214,35 +219,45 @@ export default function PostCard({
               <Text style={styles.playlistTitleText}>{item.content}</Text>
 
               <View style={styles.playlistPreviewBody}>
-                {/* Grid de Capas Reais (com fallback genérico) */}
-                <View style={styles.playlistGridCovers}>
-                  {previewCovers.length > 0 ? (
-                    previewCovers.map((media, index) => (
-                      <Image
-                        key={media.id ?? index}
-                        source={{
-                          uri: media.coverUrl ? media.coverUrl : defaultCover,
-                        }}
-                        style={styles.gridImageSquare}
-                      />
-                    ))
-                  ) : (
-                    <View
-                      style={[
-                        styles.gridImageSquare,
-                        {
-                          width: "100%",
-                          height: "100%",
-                          backgroundColor: "#2C353F",
-                          justifyContent: "center",
-                          alignItems: "center",
-                        },
-                      ]}
-                    >
-                      <Ionicons name="disc-outline" size={24} color="#8A8A8F" />
-                    </View>
-                  )}
-                </View>
+                {hasCover ? (
+                  <Image
+                    source={{ uri: item.coverImageUrl! }}
+                    style={styles.playlistSingleCover}
+                  />
+                ) : (
+                  <View style={styles.playlistGridCovers}>
+                    {previewCovers.length > 0 ? (
+                      previewCovers.map((media, index) => (
+                        <Image
+                          key={media.id ?? index}
+                          source={{
+                            uri: media.coverUrl ? media.coverUrl : defaultCover,
+                          }}
+                          style={styles.gridImageSquare}
+                        />
+                      ))
+                    ) : (
+                      <View
+                        style={[
+                          styles.gridImageSquare,
+                          {
+                            width: "100%",
+                            height: "100%",
+                            backgroundColor: "#2C353F",
+                            justifyContent: "center",
+                            alignItems: "center",
+                          },
+                        ]}
+                      >
+                        <Ionicons
+                          name="disc-outline"
+                          size={24}
+                          color="#8A8A8F"
+                        />
+                      </View>
+                    )}
+                  </View>
+                )}
 
                 {/* Informações da Tracklist Simplificada */}
                 <View style={styles.playlistTracksPreview}>
@@ -302,16 +317,16 @@ export default function PostCard({
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.actionButton}>
+        <TouchableOpacity style={styles.actionButton} onPress={goToComments}>
           <Ionicons name="chatbubble-outline" size={18} color="#8A8A8F" />
-          <Text style={styles.actionText}>0</Text>
+          <Text style={styles.actionText}>{item.commentsCount}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.actionButton}>
           <Ionicons name="share-social-outline" size={19} color="#8A8A8F" />
         </TouchableOpacity>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.actionButton, { marginLeft: "auto", marginRight: 0 }]}
           onPress={() => onReport(item.id, item.author.id)}
         >
@@ -471,10 +486,14 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontSize: 13,
   },
+  playlistSingleCover: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    backgroundColor: "#12161A",
+  },
 
   interactionsContainer: { flexDirection: "row", alignItems: "center" },
   actionButton: { flexDirection: "row", alignItems: "center", marginRight: 28 },
   actionText: { color: "#8A8A8F", fontSize: 14, marginLeft: 6 },
-
-  
 });

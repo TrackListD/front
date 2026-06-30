@@ -4,6 +4,7 @@ import AddMediaModal from "@/src/components/AddMediaModal";
 import EditMediaListNameModal from "@/src/components/EditMediaListNameModal";
 import EditMediaListPrivacyModal from "@/src/components/EditMediaListPrivacyModal";
 import apiClient, { NormalizedError } from "@/src/service/api";
+import { toggleLike } from "@/src/service/feedApi";
 import {
   MediaListOwnerResponseDto,
   MediaListResponseDto,
@@ -43,6 +44,14 @@ export default function MediaListDetailScreen() {
   const [isListOptionsVisible, setListOptionsVisible] = useState(false);
   const [isDeleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
 
+  // Estado de like (otimista), mesmo padrão usado em rating e no feed.
+  // OBS: MediaListResponseDto ainda não tem `likedByMe` — só `likeCount`.
+  // Iniciamos como `false` e confiamos na resposta de toggleLike() pra
+  // refletir o estado real. Quando o backend expuser likedByMe, é só
+  // trocar a inicialização abaixo para usá-lo.
+  const [liked, setLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
+
   const fetchDetail = async () => {
     if (!id) return;
     setLoading(true);
@@ -52,6 +61,13 @@ export default function MediaListDetailScreen() {
         MediaListResponseDto | MediaListOwnerResponseDto
       >("/mediaList/" + id);
       setMediaList(response.data);
+
+      const fetchedPublicData =
+        "publicData" in response.data
+          ? (response.data as MediaListOwnerResponseDto).publicData
+          : (response.data as MediaListResponseDto);
+      setLikeCount(Number(fetchedPublicData.likeCount ?? 0));
+      setLiked(!!(fetchedPublicData as any).likedByMe);
     } catch (err) {
       setError(err as NormalizedError);
     } finally {
@@ -75,6 +91,7 @@ export default function MediaListDetailScreen() {
     errorBg: isDark ? "#2A1818" : "#FEF2F2",
     errorText: isDark ? "#F87171" : "#B91C1C",
     starColor: "#FFC107",
+    likeColor: "#EF4444",
   };
 
   const handleToggleFavorite = async () => {
@@ -114,6 +131,26 @@ export default function MediaListDetailScreen() {
         "Erro",
         normalized.message || "Não foi possível atualizar o favorito.",
       );
+    }
+  };
+
+  // Toggle de curtida (publication like) — mesmo padrão otimista do
+  // FeedList/rating: atualiza a UI antes da resposta e desfaz em caso de erro.
+  const handleToggleLike = async () => {
+    if (!id) return;
+
+    const wasLiked = liked;
+    setLiked(!wasLiked);
+    setLikeCount((prev) => (wasLiked ? prev - 1 : prev + 1));
+
+    try {
+      const result = await toggleLike(Number(id));
+      setLiked(result.liked);
+      setLikeCount(result.likesCount);
+    } catch (err) {
+      console.error("Erro ao curtir lista de mídias:", id, err);
+      setLiked(wasLiked);
+      setLikeCount((prev) => (wasLiked ? prev + 1 : prev - 1));
     }
   };
 
@@ -234,6 +271,16 @@ export default function MediaListDetailScreen() {
     ? (mediaList as MediaListOwnerResponseDto).publicData
     : (mediaList as MediaListResponseDto);
 
+  const handleReport = () => {
+    router.push({
+      pathname: "/reportModal",
+      params: {
+        commentId: publicData.id,
+        userTargetId: publicData.authorId,
+      },
+    });
+  };
+
   return (
     <SafeAreaView
       style={[styles.safeArea, { backgroundColor: themeStyles.background }]}
@@ -249,19 +296,65 @@ export default function MediaListDetailScreen() {
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Capa da Lista */}
-        {/* DEBITO TECNICO: Backend não retorna capa da lista. Usando placeholder. */}
-        <View
-          style={[
-            styles.coverContainer,
-            { backgroundColor: isDark ? "#2A2D31" : "#E2E8F0" },
-          ]}
-        >
-          <MaterialIcons
-            name={publicData.typeOfList === "ALBUM" ? "album" : "library-music"}
-            size={64}
-            color={themeStyles.subText}
-          />
-        </View>
+        {/* Se a lista tiver coverImageUrl, mostramos a capa real.
+    Caso contrário, caímos no mesmo grid de até 4 capas usado no
+    PostCard do feed (playlistGridCovers), com fallback de ícone
+    quando não há nenhuma mídia. */}
+        {publicData.coverImageUrl ? (
+          <View
+            style={[
+              styles.coverContainer,
+              { backgroundColor: isDark ? "#2A2D31" : "#E2E8F0" },
+            ]}
+          >
+            <Image
+              source={{ uri: publicData.coverImageUrl }}
+              style={styles.coverImage}
+              resizeMode="cover"
+            />
+          </View>
+        ) : publicData.medias && publicData.medias.length > 0 ? (
+          <View
+            style={[
+              styles.coverContainer,
+              styles.coverGrid,
+              { backgroundColor: isDark ? "#12161A" : "#E2E8F0" },
+            ]}
+          >
+            {Array.from(publicData.medias)
+              .slice(0, 4)
+              .map((media, index) => (
+                <Image
+                  key={media.id ?? index}
+                  source={{
+                    uri: media.coverUrl
+                      ? media.coverUrl
+                      : "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300",
+                  }}
+                  style={[
+                    styles.coverGridImage,
+                    index % 2 === 0 && styles.coverGridImageLeft,
+                    index < 2 && styles.coverGridImageTop,
+                  ]}
+                />
+              ))}
+          </View>
+        ) : (
+          <View
+            style={[
+              styles.coverContainer,
+              { backgroundColor: isDark ? "#2A2D31" : "#E2E8F0" },
+            ]}
+          >
+            <MaterialIcons
+              name={
+                publicData.typeOfList === "ALBUM" ? "album" : "library-music"
+              }
+              size={64}
+              color={themeStyles.subText}
+            />
+          </View>
+        )}
 
         {/* Título e Autor da Lista */}
         <View style={styles.metaContainer}>
@@ -300,7 +393,7 @@ export default function MediaListDetailScreen() {
               color={themeStyles.subText}
             />
             <Text style={[styles.authorName, { color: themeStyles.textColor }]}>
-              {publicData.authorName || `Usuário #${publicData.idAuthor}`}
+              {publicData.authorName || `Usuário #${publicData.authorId}`}
             </Text>
           </View>
 
@@ -341,16 +434,47 @@ export default function MediaListDetailScreen() {
               </Pressable>
             )}
 
+            {/* Curtir (like) — coração vermelho quando curtido */}
             <Pressable
-              onPress={handleToggleFavorite}
+              onPress={handleToggleLike}
               style={styles.actionButton}
+              hitSlop={8}
             >
               <MaterialIcons
-                name={publicData.isFavorite ? "favorite" : "favorite-border"}
+                name={liked ? "favorite" : "favorite-border"}
                 size={28}
-                color={publicData.isFavorite ? "#EF4444" : themeStyles.subText}
+                color={liked ? themeStyles.likeColor : themeStyles.subText}
               />
             </Pressable>
+            {likeCount > 0 && (
+              <Text
+                style={{
+                  color: liked ? themeStyles.likeColor : themeStyles.subText,
+                  fontSize: 13,
+                  fontWeight: "600",
+                  marginLeft: -10,
+                }}
+              >
+                {likeCount}
+              </Text>
+            )}
+
+            {/* Favoritar a lista (bookmark) — só o dono pode favoritar a própria lista */}
+            {isOwner && (
+              <Pressable
+                onPress={handleToggleFavorite}
+                style={styles.actionButton}
+                hitSlop={8}
+              >
+                <MaterialIcons
+                  name={publicData.isFavorite ? "bookmark" : "bookmark-border"}
+                  size={28}
+                  color={
+                    publicData.isFavorite ? "#F59E0B" : themeStyles.subText
+                  }
+                />
+              </Pressable>
+            )}
 
             {/* DEBITO TECNICO: Sem funcionalidade de compartilhamento no backend. */}
             <Pressable
@@ -364,6 +488,19 @@ export default function MediaListDetailScreen() {
             >
               <MaterialIcons
                 name="share"
+                size={24}
+                color={themeStyles.subText}
+              />
+            </Pressable>
+
+            {/* Denunciar lista */}
+            <Pressable
+              onPress={handleReport}
+              style={styles.actionButton}
+              hitSlop={8}
+            >
+              <MaterialIcons
+                name="flag"
                 size={24}
                 color={themeStyles.subText}
               />
@@ -477,6 +614,55 @@ export default function MediaListDetailScreen() {
               ))}
             </View>
           )}
+        </View>
+
+        {/* Aba de Comentários — mesmo padrão usado na tela de rating */}
+        <View
+          style={[
+            styles.card,
+            { backgroundColor: themeStyles.cardBackground, marginTop: 16 },
+          ]}
+        >
+          <Text
+            style={[styles.commentsTitle, { color: themeStyles.textColor }]}
+          >
+            Comentários
+          </Text>
+
+          <Pressable
+            onPress={() => {
+              router.push(`/comments/post/${publicData.id}` as Href);
+            }}
+            style={({ pressed }) => [
+              styles.commentsButton,
+              {
+                borderColor: themeStyles.border,
+                backgroundColor: isDark ? "#151719" : "#F8F9FA",
+              },
+              pressed && styles.pressed,
+            ]}
+          >
+            <View style={styles.commentsButtonLeft}>
+              <MaterialIcons
+                name="forum"
+                size={20}
+                color={themeStyles.tintColor}
+              />
+              <Text
+                style={[
+                  styles.commentsButtonText,
+                  { color: themeStyles.textColor },
+                ]}
+              >
+                Ver todos os comentários ({publicData.commentCount})
+              </Text>
+            </View>
+            <MaterialIcons
+              name="chevron-right"
+              size={24}
+              color={themeStyles.subText}
+            />
+          </Pressable>
         </View>
       </ScrollView>
 
@@ -853,6 +1039,28 @@ const styles = StyleSheet.create({
   moreButton: {
     padding: 4,
   },
+  commentsTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 14,
+  },
+  commentsButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 16,
+  },
+  commentsButtonLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  commentsButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
   errorCard: {
     borderWidth: 1,
     borderRadius: 16,
@@ -940,5 +1148,30 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 10,
     alignItems: "center",
+  },
+  coverImage: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 16,
+  },
+  coverGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "flex-start",
+    alignItems: "flex-start",
+    overflow: "hidden",
+    padding: 2,
+  },
+  coverGridImage: {
+    width: 77,
+    height: 77,
+    borderRadius: 2,
+    marginBottom: 2,
+  },
+  coverGridImageLeft: {
+    marginRight: 2,
+  },
+  coverGridImageTop: {
+    marginBottom: 2,
   },
 });

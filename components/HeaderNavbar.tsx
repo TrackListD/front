@@ -94,8 +94,11 @@ export default function HeaderNavbar() {
             <Ionicons name="search-outline" size={22} color="#FFFFFF" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.iconButton}>
-            <Ionicons name="settings-outline" size={22} color="#FFFFFF" />
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => router.push("/faq")}
+          >
+            <Ionicons name="help-circle-outline" size={24} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
       </View>
@@ -122,6 +125,18 @@ export default function HeaderNavbar() {
             >
               <Ionicons name="person-outline" size={20} color="#FFFFFF" />
               <Text style={styles.menuText}>Meu Perfil</Text>
+            </TouchableOpacity>
+
+            <View style={styles.separator} />
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                setMenuVisible(false);
+                router.push("/faq");
+              }}
+            >
+              <Ionicons name="help-circle-outline" size={20} color="#FFFFFF" />
+              <Text style={styles.menuText}>FAQ / Ajuda</Text>
             </TouchableOpacity>
 
             <View style={styles.separator} />

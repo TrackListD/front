@@ -2,7 +2,7 @@ import { followUser, getUserFeed, toggleLike } from "@/src/service/feedApi";
 import { auth } from "@/src/service/firebase";
 import { UserProfile } from "@/src/service/userApi";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter, Href } from "expo-router";
+import { Href, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -184,8 +184,10 @@ export function ProfileView({
       renderItem={({ item }) => (
         <PostCard
           item={item}
+          currentUserId={isMe ? user.id : undefined}
           onToggleLike={handleToggleLike}
           onFollow={handleFollowAuthor}
+          onReport={() => {}}
         />
       )}
       ListHeaderComponent={

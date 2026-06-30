@@ -8,10 +8,16 @@ export interface RatingRequestDto {
   whoCanSee: "PUBLIC" | "JUST_FOLLOWERS" | "PRIVATE";
 }
 
+export interface UserMinResponseDto {
+  id: number;
+  name: string;
+  profilePic: string | null;
+}
+
 // Versão pública: retornada quando outro usuário visualiza a avaliação
 export interface RatingResponseDto {
   id: number;
-  authorId: number;
+  author: UserMinResponseDto;
   targetMedia: MediaMinDto;
   publicationDate: string;
   ratingNote: number;
@@ -34,7 +40,9 @@ export interface RatingOwnerResponseDto {
 export type RatingDetailResponse = RatingResponseDto | RatingOwnerResponseDto;
 
 // Type guard: retorna true se a resposta for do dono (tem publicDto)
-export function isOwnerResponse(r: RatingDetailResponse): r is RatingOwnerResponseDto {
+export function isOwnerResponse(
+  r: RatingDetailResponse,
+): r is RatingOwnerResponseDto {
   return "publicDto" in r;
 }
 

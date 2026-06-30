@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 import React, { useState, useEffect } from 'react';
 import { FlatList, ActivityIndicator } from 'react-native';
 import { authFetch } from '../../../src/service/api';
-import { Container, Header, Title, Subtitle, ReportCard, ReportHeader, ReportTitle, ReportDate, ReportDescription, StatusBadge, StatusText, EmptyStateText } from './styles';
+import { Container, Header, Title, Subtitle, ReportCard, ReportHeader, ReportTitle, ReportDate, ReportDescription, StatusBadge, StatusText, EmptyStateText, CancelButton, ActionText } from './styles';
 
 export default function PendingReportsScreen() {
   const [reports, setReports] = useState([]);
@@ -37,11 +37,11 @@ export default function PendingReportsScreen() {
   const renderReport = ({ item }: any) => (
     <ReportCard onPress={() => handleOpenResolution(item.id)}>
       <ReportHeader>
-        <ReportTitle>{item.title}</ReportTitle>
-        <ReportDate>{item.date}</ReportDate>
+        <ReportTitle>{item.reportedContent || 'Usuário / Conteúdo Oculto'}</ReportTitle>
+        <ReportDate>{new Date(item.reportDate).toLocaleDateString('pt-BR')}</ReportDate>
       </ReportHeader>
       <ReportDescription numberOfLines={2}>
-        {item.description}
+        {item.reason}
       </ReportDescription>
       {/* Cores ajustadas para tom de alerta (âmbar/laranja) */}
       <StatusBadge style={{ backgroundColor: '#2E2211' }}>
@@ -67,6 +67,11 @@ export default function PendingReportsScreen() {
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <EmptyStateText>Nenhuma denúncia pendente na fila.</EmptyStateText>
+          }
+          ListFooterComponent={
+            <CancelButton onPress={() => router.replace('/feed/global')}>
+              <ActionText style={{ color: '#8A93A6' }}>Voltar</ActionText>
+            </CancelButton>
           }
         />
       )}

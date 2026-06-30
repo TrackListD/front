@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState, useEffect } from 'react';
-import { ActivityIndicator, Alert, ScrollView } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, View, TextInput } from 'react-native';
 import { authFetch } from '../../../src/service/api';
 import { Container, Header, Title, Subtitle, ReportCard, ReportHeader, ReportTitle, ReportDate, ReportDescription, SectionTitle, ActionButton, ActionText, CancelButton } from './styles';
 
@@ -10,6 +10,8 @@ export default function ReportSolutionScreen() {
   const [report, setReport] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [showSuspendOptions, setShowSuspendOptions] = useState(false);
+  const [suspendDays, setSuspendDays] = useState('7');
 
   useEffect(() => {
     fetchReportDetails();
@@ -17,44 +19,46 @@ export default function ReportSolutionScreen() {
 
   const fetchReportDetails = async () => {
     try {
-      // ATENÇÃO: Rota dependente de criação no backend
+      setLoading(true);
       const response = await authFetch(`/admin/reports/${id}`);
       if (!response.ok) throw new Error('Falha ao buscar denúncia');
-
       const data = await response.json();
-      setReport(data);
+      setReport({
+        title: data.reportedContent || 'Conteúdo / Usuário Oculto',
+        description: data.reason || 'Sem justificativa',
+        date: new Date(data.reportDate).toLocaleDateString('pt-BR')
+      });
     } catch (error) {
       console.error(error);
-      setReport({
-        id, title: 'Conteúdo ofensivo', description: 'Dados simulados porque a rota GET não existe no Java.', date: 'Hoje'
-      });
+      Alert.alert('Erro', 'Não foi possível carregar a denúncia.');
     } finally {
       setLoading(false);
     }
   };
 
   const handleAction = async (status: string, punishment: string | null = null, daysOfSuspension: number | null = null) => {
-    setActionLoading(true);
-    try {
-      // Rota e payload exatos do AdminController.java
-      const response = await authFetch(`/admin/reports/${id}/moderate`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status, punishment, daysOfSuspension })
-      });
+      setActionLoading(true);
+      try {
+        const response = await authFetch(`/admin/reports/${id}/moderate`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status, punishment, daysOfSuspension })
+        });
+        if (!response.ok) throw new Error('Falha ao processar a decisão');
+        // Exibe a confirmação visual na tela sem atrelar a navegação aos botões do alerta
+        Alert.alert('Sucesso', 'Decisão aplicada no banco de dados.');
 
-      if (!response.ok) throw new Error('Falha ao processar a decisão');
+        // O router.replace destrói a tela atual e remonta a lista de pendências do zero.
+        // Isso força uma nova requisição na API, fazendo a denúncia que foi julgada sumir da tela.
+        router.replace('/admin/reports/pending');
 
-      Alert.alert('Sucesso', 'Denúncia moderada com sucesso.', [
-        { text: 'OK', onPress: () => router.back() }
-      ]);
-    } catch (error) {
-      console.error(error);
-      Alert.alert('Erro', 'Não foi possível aplicar a moderação no servidor.');
-    } finally {
-      setActionLoading(false);
-    }
-  };
+      } catch (error) {
+        console.error(error);
+        Alert.alert('Erro', 'Não foi possível aplicar a moderação no servidor.');
+      } finally {
+        setActionLoading(false);
+      }
+    };
 
   if (loading) {
     return (
@@ -83,19 +87,43 @@ export default function ReportSolutionScreen() {
 
         <SectionTitle>Decisão do Administrador</SectionTitle>
 
-        <ActionButton onPress={() => handleAction('RESOLVED', 'BAN', null)} disabled={actionLoading}>
+        <ActionButton onPress={() => handleAction('RESOLVED', 'ACCOUNT_DELETION', null)} disabled={actionLoading}>
           <ActionText>Banir Usuário</ActionText>
         </ActionButton>
 
-        <ActionButton onPress={() => handleAction('RESOLVED', 'CONTENT_REMOVAL', null)} disabled={actionLoading}>
-          <ActionText>Remover Conteúdo</ActionText>
-        </ActionButton>
+        {!showSuspendOptions ? (
+          <ActionButton onPress={() => setShowSuspendOptions(true)} disabled={actionLoading} style={{ backgroundColor: '#FFB020' }}>
+            <ActionText style={{ color: '#121418' }}>Remover Conteúdo...</ActionText>
+          </ActionButton>
+        ) : (
+          <View style={{ backgroundColor: '#121418', padding: 16, borderRadius: 8, marginBottom: 12, borderWidth: 1, borderColor: '#2A2F3A' }}>
+
+            <ActionButton onPress={() => handleAction('RESOLVED', 'WARNING', null)} disabled={actionLoading} style={{ backgroundColor: '#2A2F3A' }}>
+              <ActionText style={{ color: '#FFFFFF' }}>Apenas Remover (Aplicar Aviso)</ActionText>
+            </ActionButton>
+
+            <ActionText style={{ color: '#8A93A6', fontSize: 14, marginTop: 12, marginBottom: 8 }}>Dias de suspensão para o autor:</ActionText>
+
+            <TextInput
+              keyboardType="numeric"
+              value={suspendDays}
+              onChangeText={setSuspendDays}
+              placeholder="7"
+              placeholderTextColor="#4A5263"
+              style={{ backgroundColor: '#1A1D24', color: '#FFFFFF', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#2A2F3A', marginBottom: 12 }}
+            />
+
+            <ActionButton onPress={() => handleAction('RESOLVED', 'TEMPORARY_SUSPENSION', parseInt(suspendDays) || 7)} disabled={actionLoading} style={{ backgroundColor: '#FF5C5C', marginBottom: 0 }}>
+              <ActionText style={{ color: '#FFFFFF' }}>Remover e Suspender Usuário</ActionText>
+            </ActionButton>
+
+          </View>
+        )}
 
         <ActionButton
-          onPress={() => handleAction('IGNORED', null, null)}
+          onPress={() => handleAction('IGNORED', 'NONE', null)}
           disabled={actionLoading}
-          style={{ backgroundColor: '#1A1D24', borderWidth: 1, borderColor: '#2A2F3A' }}
-        >
+          style={{ backgroundColor: '#1A1D24', borderWidth: 1, borderColor: '#2A2F3A' }}>
           <ActionText style={{ color: '#00E5FF' }}>Arquivar (Manter Ignorado)</ActionText>
         </ActionButton>
 

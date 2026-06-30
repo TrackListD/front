@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { Href, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   Image,
@@ -44,11 +44,6 @@ export default function HeaderNavbar() {
     }
   };
 
-  const handleProfile = () => {
-    setMenuVisible(false);
-    //router.push("/profile");
-  };
-
   return (
     <>
       <View style={styles.navbarContainer}>
@@ -80,6 +75,25 @@ export default function HeaderNavbar() {
 
         {/* Ações */}
         <View style={styles.actionsContainer}>
+          {/* NOVO: Botão Criar Lista */}
+          <TouchableOpacity
+            style={styles.createListButton}
+            onPress={() => router.push("/media-lists/create" as Href)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="add-circle-outline" size={18} color="#1DB954" />
+            <Text style={styles.createListText}>Criar Lista</Text>
+          </TouchableOpacity>
+
+          {/* Botão de busca (Lupa) */}
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => router.push("/search" as Href)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="search-outline" size={22} color="#FFFFFF" />
+          </TouchableOpacity>
+
           <TouchableOpacity style={styles.iconButton}>
             <Ionicons name="settings-outline" size={22} color="#FFFFFF" />
           </TouchableOpacity>
@@ -101,7 +115,10 @@ export default function HeaderNavbar() {
           <View style={styles.menuContainer}>
             <TouchableOpacity
               style={styles.menuItem}
-              onPress={() => router.push("/profile/me")}
+              onPress={() => {
+                setMenuVisible(false);
+                router.push("/profile/me" as Href);
+              }}
             >
               <Ionicons name="person-outline" size={20} color="#FFFFFF" />
               <Text style={styles.menuText}>Meu Perfil</Text>
@@ -181,8 +198,27 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
+  // Estilos do novo botão "Criar Lista"
+  createListButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#1A1F24",
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#2C353F",
+  },
+
+  createListText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "700",
+    marginLeft: 4,
+  },
+
   iconButton: {
-    marginLeft: 16,
+    marginLeft: 14,
     position: "relative",
     padding: 4,
   },

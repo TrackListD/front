@@ -1,5 +1,6 @@
+// Adicione o useRouter aqui
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams } from "expo-router";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -30,6 +31,7 @@ interface ArtistData {
 }
 
 export default function ArtistScreen() {
+  const router = useRouter();
   const { id } = useLocalSearchParams();
   const [loading, setLoading] = useState(true);
   const [artist, setArtist] = useState<ArtistData | null>(null);
@@ -48,6 +50,9 @@ export default function ArtistScreen() {
       if (response.ok) {
         const data = await response.json();
         setArtist(data);
+        // Desta forma você verá os dados reais assim que eles chegam:
+        console.log("Dados puros da API:", data);
+        console.log("Lista de álbuns:", data.albums);
       } else {
         const errorText = await response.text();
         console.error(`Erro na API: ${response.status} - ${errorText}`);
@@ -77,6 +82,15 @@ export default function ArtistScreen() {
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      <Stack.Screen
+        options={{
+          headerShown: true, // Exibe o header
+          headerTransparent: true, // Transparente para manter o design do seu banner
+          headerTitle: "", // Sem título para ficar limpo
+          headerTintColor: "#FFF", // Define a cor da seta como branca
+          headerBackTitle: "",
+        }}
+      />
       <ImageBackground
         source={{
           uri:
@@ -121,7 +135,22 @@ export default function ArtistScreen() {
               : "N/A";
 
             return (
-              <View key={album.spotifyID} style={styles.albumCard}>
+              <TouchableOpacity
+                key={album.spotifyID} // Previna erros de chave aqui também
+                style={styles.albumCard}
+                onPress={() =>
+                  router.push({
+                    pathname: "/ratings/create",
+                    params: {
+                      // Altere esta linha para capturar a propriedade correta:
+                      targetId: album.spotifyID,
+                      title: album.name,
+                      coverUrl: album.imageUrl,
+                      artist: artist.artist.name,
+                    },
+                  })
+                }
+              >
                 <Image
                   source={{ uri: album.imageUrl }}
                   style={styles.albumCover}
@@ -132,7 +161,7 @@ export default function ArtistScreen() {
                 <View style={styles.albumFooter}>
                   <Text style={styles.albumYear}>{releaseYear}</Text>
                 </View>
-              </View>
+              </TouchableOpacity>
             );
           })}
         </View>

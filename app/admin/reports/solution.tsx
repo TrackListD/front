@@ -99,7 +99,7 @@ export default function ReportSolutionScreen() {
           <View style={{ backgroundColor: '#121418', padding: 16, borderRadius: 8, marginBottom: 12, borderWidth: 1, borderColor: '#2A2F3A' }}>
 
             <ActionButton onPress={() => handleAction('RESOLVED', 'WARNING', null)} disabled={actionLoading} style={{ backgroundColor: '#2A2F3A' }}>
-              <ActionText style={{ color: '#FFFFFF' }}>Apenas Remover (Aplicar Aviso)</ActionText>
+              <ActionText style={{ color: '#FFFFFF' }}>Apenas Remover</ActionText>
             </ActionButton>
 
             <ActionText style={{ color: '#8A93A6', fontSize: 14, marginTop: 12, marginBottom: 8 }}>Dias de suspensão para o autor:</ActionText>
@@ -124,7 +124,7 @@ export default function ReportSolutionScreen() {
           onPress={() => handleAction('IGNORED', 'NONE', null)}
           disabled={actionLoading}
           style={{ backgroundColor: '#1A1D24', borderWidth: 1, borderColor: '#2A2F3A' }}>
-          <ActionText style={{ color: '#00E5FF' }}>Arquivar (Manter Ignorado)</ActionText>
+          <ActionText style={{ color: '#00E5FF' }}>Arquivar Denúncia</ActionText>
         </ActionButton>
 
         <CancelButton onPress={() => router.back()} disabled={actionLoading}>

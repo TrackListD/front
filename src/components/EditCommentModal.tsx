@@ -1,22 +1,25 @@
 // Componente: Modal de edição de comentário — permite ao autor alterar o texto via PATCH /api/comments/{id}/text
-import React, { useState, useEffect } from "react";
-import {
-  Modal,
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  Pressable,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  TouchableWithoutFeedback,
-  Keyboard,
-} from "react-native";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import apiClient, { NormalizedError } from "@/src/service/apiClient";
-import { CommentResponseDto, CommentOwnerResponseDto } from "@/src/types/comment";
+import apiClient, { NormalizedError } from "@/src/service/api";
+import {
+  CommentOwnerResponseDto,
+  CommentResponseDto,
+} from "@/src/types/comment";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Keyboard,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableWithoutFeedback,
+  View,
+} from "react-native";
 
 interface EditCommentModalProps {
   visible: boolean;
@@ -71,17 +74,18 @@ export default function EditCommentModal({
     setError(null);
     try {
       const response = await apiClient.patch<CommentOwnerResponseDto>(
-        `/api/comments/${commentId}/text`,
-        { newText: text }
+        `/comments/${commentId}/text`,
+        { newText: text },
       );
 
       const updatedComment: CommentResponseDto = {
         id: commentId,
-        idPost: response.data.publicData.idPost,
-        idAuthor: response.data.publicData.idAuthor,
+        postId: response.data.publicData.postId,
+        author: response.data.publicData.author,
         text: response.data.publicData.text,
         commentDate: response.data.publicData.commentDate,
         likeCount: response.data.publicData.likeCount,
+        likedByMe: response.data.publicData.likedByMe,
       };
 
       onSuccess(updatedComment);
@@ -102,26 +106,48 @@ export default function EditCommentModal({
       onRequestClose={onClose}
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View style={[styles.backdrop, { backgroundColor: themeStyles.backdrop }]}>
+        <View
+          style={[styles.backdrop, { backgroundColor: themeStyles.backdrop }]}
+        >
           <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             style={styles.keyboardView}
           >
-            <View style={[styles.modalCard, { backgroundColor: themeStyles.modalBackground }]}>
+            <View
+              style={[
+                styles.modalCard,
+                { backgroundColor: themeStyles.modalBackground },
+              ]}
+            >
               {/* Cabeçalho */}
               <View style={styles.header}>
                 <Text style={[styles.title, { color: themeStyles.textColor }]}>
                   Editar Comentário
                 </Text>
-                <Pressable onPress={onClose} disabled={loading} style={styles.closeButton}>
-                  <MaterialIcons name="close" size={24} color={themeStyles.textColor} />
+                <Pressable
+                  onPress={onClose}
+                  disabled={loading}
+                  style={styles.closeButton}
+                >
+                  <MaterialIcons
+                    name="close"
+                    size={24}
+                    color={themeStyles.textColor}
+                  />
                 </Pressable>
               </View>
 
               {/* Alerta de erro */}
               {error && (
-                <View style={[styles.errorContainer, { backgroundColor: themeStyles.errorBg }]}>
-                  <Text style={[styles.errorText, { color: themeStyles.errorText }]}>
+                <View
+                  style={[
+                    styles.errorContainer,
+                    { backgroundColor: themeStyles.errorBg },
+                  ]}
+                >
+                  <Text
+                    style={[styles.errorText, { color: themeStyles.errorText }]}
+                  >
                     {error}
                   </Text>
                 </View>
@@ -150,17 +176,30 @@ export default function EditCommentModal({
               {/* Ações do Rodapé */}
               <View style={styles.footer}>
                 <Pressable
-                  style={[styles.button, styles.buttonCancel, { backgroundColor: themeStyles.buttonCancelBg }]}
+                  style={[
+                    styles.button,
+                    styles.buttonCancel,
+                    { backgroundColor: themeStyles.buttonCancelBg },
+                  ]}
                   onPress={onClose}
                   disabled={loading}
                 >
-                  <Text style={[styles.buttonText, { color: themeStyles.textColor }]}>
+                  <Text
+                    style={[
+                      styles.buttonText,
+                      { color: themeStyles.textColor },
+                    ]}
+                  >
                     Cancelar
                   </Text>
                 </Pressable>
 
                 <Pressable
-                  style={[styles.button, styles.buttonSave, { backgroundColor: themeStyles.tintColor }]}
+                  style={[
+                    styles.button,
+                    styles.buttonSave,
+                    { backgroundColor: themeStyles.tintColor },
+                  ]}
                   onPress={handleSave}
                   disabled={loading}
                 >

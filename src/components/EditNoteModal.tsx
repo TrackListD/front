@@ -1,19 +1,19 @@
-// Componente: Modal de edição de nota — permite ao dono alterar a nota da avaliação via PATCH /api/ratings/{id}/note
-import React, { useState, useEffect } from "react";
-import {
-  Modal,
-  View,
-  Text,
-  StyleSheet,
-  Pressable,
-  ActivityIndicator,
-  TouchableWithoutFeedback,
-} from "react-native";
+// Componente: Modal de edição de nota — permite ao dono alterar a nota da avaliação via PATCH /ratings/{id}/note
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import apiClient, { NormalizedError } from "@/src/service/apiClient";
+import apiClient, { NormalizedError } from "@/src/service/api";
 import { RatingOwnerResponseDto } from "@/src/types/rating";
-import { StarRating } from "./StarRating";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  TouchableWithoutFeedback,
+  View,
+} from "react-native";
+import { StarRating } from "./StarRating";
 
 interface EditNoteModalProps {
   visible: boolean;
@@ -69,8 +69,8 @@ export default function EditNoteModal({
     setError(null);
     try {
       const response = await apiClient.patch<RatingOwnerResponseDto>(
-        `/api/ratings/${ratingId}/note`,
-        { newRatingNote: note }
+        `/ratings/${ratingId}/note`,
+        { newRatingNote: note },
       );
       onSuccess(response.data);
       onClose();
@@ -90,23 +90,45 @@ export default function EditNoteModal({
       onRequestClose={onClose}
     >
       <TouchableWithoutFeedback onPress={onClose}>
-        <View style={[styles.backdrop, { backgroundColor: themeStyles.backdrop }]}>
+        <View
+          style={[styles.backdrop, { backgroundColor: themeStyles.backdrop }]}
+        >
           <TouchableWithoutFeedback>
-            <View style={[styles.modalCard, { backgroundColor: themeStyles.modalBackground }]}>
+            <View
+              style={[
+                styles.modalCard,
+                { backgroundColor: themeStyles.modalBackground },
+              ]}
+            >
               {/* Cabeçalho */}
               <View style={styles.header}>
                 <Text style={[styles.title, { color: themeStyles.textColor }]}>
                   Editar Nota
                 </Text>
-                <Pressable onPress={onClose} disabled={loading} style={styles.closeButton}>
-                  <MaterialIcons name="close" size={24} color={themeStyles.textColor} />
+                <Pressable
+                  onPress={onClose}
+                  disabled={loading}
+                  style={styles.closeButton}
+                >
+                  <MaterialIcons
+                    name="close"
+                    size={24}
+                    color={themeStyles.textColor}
+                  />
                 </Pressable>
               </View>
 
               {/* Alerta de erro */}
               {error && (
-                <View style={[styles.errorContainer, { backgroundColor: themeStyles.errorBg }]}>
-                  <Text style={[styles.errorText, { color: themeStyles.errorText }]}>
+                <View
+                  style={[
+                    styles.errorContainer,
+                    { backgroundColor: themeStyles.errorBg },
+                  ]}
+                >
+                  <Text
+                    style={[styles.errorText, { color: themeStyles.errorText }]}
+                  >
                     {error}
                   </Text>
                 </View>
@@ -125,7 +147,9 @@ export default function EditNoteModal({
                   emptyColor={themeStyles.subText}
                   size={36}
                 />
-                <Text style={[styles.noteText, { color: themeStyles.textColor }]}>
+                <Text
+                  style={[styles.noteText, { color: themeStyles.textColor }]}
+                >
                   {note.toFixed(1)} / 5.0
                 </Text>
               </View>
@@ -141,8 +165,18 @@ export default function EditNoteModal({
                     },
                   ]}
                 >
-                  <MaterialIcons name="error-outline" size={20} color={themeStyles.errorText} style={{ marginRight: 8 }} />
-                  <Text style={[styles.validationErrorText, { color: themeStyles.errorText }]}>
+                  <MaterialIcons
+                    name="error-outline"
+                    size={20}
+                    color={themeStyles.errorText}
+                    style={{ marginRight: 8 }}
+                  />
+                  <Text
+                    style={[
+                      styles.validationErrorText,
+                      { color: themeStyles.errorText },
+                    ]}
+                  >
                     {validationError}
                   </Text>
                 </View>
@@ -151,17 +185,30 @@ export default function EditNoteModal({
               {/* Ações do Rodapé */}
               <View style={styles.footer}>
                 <Pressable
-                  style={[styles.button, styles.buttonCancel, { backgroundColor: themeStyles.buttonCancelBg }]}
+                  style={[
+                    styles.button,
+                    styles.buttonCancel,
+                    { backgroundColor: themeStyles.buttonCancelBg },
+                  ]}
                   onPress={onClose}
                   disabled={loading}
                 >
-                  <Text style={[styles.buttonText, { color: themeStyles.textColor }]}>
+                  <Text
+                    style={[
+                      styles.buttonText,
+                      { color: themeStyles.textColor },
+                    ]}
+                  >
                     Cancelar
                   </Text>
                 </Pressable>
 
                 <Pressable
-                  style={[styles.button, styles.buttonSave, { backgroundColor: themeStyles.tintColor }]}
+                  style={[
+                    styles.button,
+                    styles.buttonSave,
+                    { backgroundColor: themeStyles.tintColor },
+                  ]}
                   onPress={handleSave}
                   disabled={loading}
                 >

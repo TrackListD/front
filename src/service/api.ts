@@ -152,6 +152,14 @@ const apiClient = {
     const data = await request<T>(path, { method: "DELETE" });
     return { data };
   },
+  patch: async <T>(path: string, body?: unknown): Promise<{ data: T }> => {
+    const data = await request<T>(path, {
+      method: "PATCH",
+      headers: body ? { "Content-Type": "application/json" } : undefined,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    return { data };
+  },
 };
 
 export default apiClient;

@@ -33,6 +33,7 @@ export default function RootLayout() {
             headerTintColor: colorScheme === "dark" ? "#fff" : "#000",
           }} 
         />
+        <Stack.Screen name="faq" options={{ title: "FAQ" }} />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>

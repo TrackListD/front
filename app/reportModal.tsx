@@ -1,16 +1,27 @@
-import React, { useState } from 'react';
-import { StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+} from "react-native";
+import apiClient from "../src/service/api";
+import { getMyProfile } from "../src/service/userApi";
 
 export default function ReportModalScreen() {
   const router = useRouter();
-  
-  // Captura os parâmetros enviados para saber quem/o que está sendo denunciado
-  const { commentId, userTargetId, reason } = useLocalSearchParams();
 
-  const [description, setDescription] = useState('');
+  const { commentId, userTargetId, reason } = useLocalSearchParams<{
+    commentId?: string;
+    userTargetId?: string;
+    reason?: string;
+  }>();
+
+  const [description, setDescription] = useState(reason ?? "");
   const [loading, setLoading] = useState(false);
 
   const handleSubmitReport = async () => {
@@ -21,32 +32,37 @@ export default function ReportModalScreen() {
 
     setLoading(true);
 
-    // DTO exato que o seu backend Java espera no @RequestBody ReportRequestDTO
-    const reportData = {
-      informer_id: 1, // Exemplo: Substitua pelo ID do usuário logado vindo do seu AuthContext/Firebase
-      user_target_id: userTargetId ? Number(userTargetId) : null,
-      comment_target_id: commentId ? Number(commentId) : null,
-      report_reason: description
-    };
-
     try {
-      // Use o IP da sua máquina local na rede (não use localhost, pois o emulador/celular não achará o Spring)
-      const response = await fetch('http://192.168.X.X:8080/api/reports', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(reportData),
-      });
+      // Busca o usuário logado para saber quem está denunciando.
+      // (Mesmo padrão usado no FeedList/profile: cada tela resolve o
+      // usuário atual via getMyProfile/authFetch, não existe um
+      // useAuth()/context global ainda.)
+      const me = await getMyProfile();
 
-      if (response.ok || response.status === 201) {
-        Alert.alert("Denúncia Enviada", "Agradecemos o envio. Nossa equipe de moderação irá analisar o conteúdo.");
-        router.back(); // Fecha o modal e volta para a tela anterior
-      } else {
-        Alert.alert("Erro", "Ocorreu um problema ao enviar a denúncia. Tente novamente.");
-      }
+      // DTO esperado pelo @RequestBody ReportRequestDTO do Spring (camelCase)
+      const reportData = {
+        informerId: me.id,
+        userTargetId: userTargetId ? Number(userTargetId) : null,
+        commentTargetId: commentId ? Number(commentId) : null,
+        reportReason: description,
+      };
+
+      // apiClient.post já usa authFetch por dentro (injeta o token do
+      // Firebase, já resolve API_BASE_URL com /api, e já trata erros)
+      await apiClient.post("/reports", reportData);
+
+      Alert.alert(
+        "Denúncia Enviada",
+        "Agradecemos o envio. Nossa equipe de moderação irá analisar o conteúdo.",
+      );
+      router.back(); // Fecha o modal e volta para a tela anterior
     } catch (error) {
-      Alert.alert("Erro de Rede", "Não foi possível conectar ao servidor.");
+      console.error("Erro ao enviar denúncia:", error);
+      const message =
+        error && typeof error === "object" && "message" in error
+          ? String((error as { message: unknown }).message)
+          : "Ocorreu um problema ao enviar a denúncia. Tente novamente.";
+      Alert.alert("Erro", message);
     } finally {
       setLoading(false);
     }
@@ -54,7 +70,9 @@ export default function ReportModalScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ThemedText type="title" style={styles.title}>Denunciar Conteúdo</ThemedText>
+      <ThemedText type="title" style={styles.title}>
+        Denunciar Conteúdo
+      </ThemedText>
       <ThemedText style={styles.subtitle}>
         Ajude-nos a manter a comunidade do TrackListd segura e respeitosa.
       </ThemedText>
@@ -69,8 +87,8 @@ export default function ReportModalScreen() {
         onChangeText={setDescription}
       />
 
-      <TouchableOpacity 
-        style={[styles.button, styles.submitButton]} 
+      <TouchableOpacity
+        style={[styles.button, styles.submitButton]}
         onPress={handleSubmitReport}
         disabled={loading}
       >
@@ -81,7 +99,10 @@ export default function ReportModalScreen() {
         )}
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.cancelButton} onPress={() => router.back()}>
+      <TouchableOpacity
+        style={styles.cancelButton}
+        onPress={() => router.back()}
+      >
         <ThemedText style={styles.cancelText}>Cancelar</ThemedText>
       </TouchableOpacity>
     </ThemedView>
@@ -92,49 +113,49 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 24,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   title: {
     marginBottom: 8,
-    textAlign: 'center',
+    textAlign: "center",
   },
   subtitle: {
-    color: '#aaa',
-    textAlign: 'center',
+    color: "#aaa",
+    textAlign: "center",
     marginBottom: 24,
     fontSize: 14,
   },
   input: {
-    backgroundColor: '#1C1C1E', // Fundo cinza escuro alinhado com o Dark Mode dos seus protótipos
-    color: '#fff',
+    backgroundColor: "#1C1C1E",
+    color: "#fff",
     borderRadius: 8,
     padding: 16,
     height: 120,
-    textAlignVertical: 'top',
+    textAlignVertical: "top",
     fontSize: 15,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: "#333",
   },
   button: {
     borderRadius: 24,
     paddingVertical: 14,
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 12,
   },
   submitButton: {
-    backgroundColor: '#1DB954', // O tom verde "Spotify" que você usou no "Começar Agora"
+    backgroundColor: "#1DB954",
   },
   buttonText: {
-    fontWeight: 'bold',
-    color: '#000',
+    fontWeight: "bold",
+    color: "#000",
   },
   cancelButton: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: 8,
   },
   cancelText: {
-    color: '#FF453A', // Cor vermelha suave para desistência
-    fontWeight: '600',
+    color: "#FF453A",
+    fontWeight: "600",
   },
 });

@@ -1,5 +1,5 @@
 // app/profile/me.tsx
-import { useRouter } from "expo-router";
+import { useRouter, Href } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
 import { ProfileView } from "../../components/ProfileView";
@@ -48,7 +48,7 @@ export default function MyProfileScreen() {
     <ProfileView
       user={user}
       isMe={true}
-      onEditPress={() => router.push("/profile/edit")} // Encaminha para sua tela de edição
+      onEditPress={() => router.push("/profile/edit" as Href)} // Encaminha para sua tela de edição
     />
   );
 }

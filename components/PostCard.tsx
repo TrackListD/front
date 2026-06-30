@@ -19,8 +19,6 @@ type PostCardProps = {
   onReport: (postId: number, authorId: number) => void;
 };
 
-const defaultAvatar =
-  "https://vivaacidadenews.com.br/wp-content/uploads/2026/01/SAMUEL-12-media-scaled-e1769187444520-1200x650.jpg";
 const defaultCover =
   "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300";
 
@@ -63,7 +61,6 @@ export default function PostCard({
   const router = useRouter();
 
   // Controla se o botão "Seguir" ainda deve ser renderizado.
-  // Só vira false depois que a animação de saída termina.
   const [followButtonVisible, setFollowButtonVisible] = useState(true);
 
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -73,24 +70,24 @@ export default function PostCard({
     onFollow(item.author.id);
 
     Animated.sequence([
-      // 1. Pulse: cresce rápido
       Animated.timing(scaleAnim, {
         toValue: 1.15,
         duration: 120,
         useNativeDriver: true,
       }),
-      // 2. Encolhe e desaparece junto
-      Animated.parallel([
-        Animated.timing(scaleAnim, {
-          toValue: 0.7,
-          duration: 180,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacityAnim, {
-          toValue: 0,
-          duration: 180,
-          useNativeDriver: true,
-        }),
+      Animated.sequence([
+        Animated.parallel([
+          Animated.timing(scaleAnim, {
+            toValue: 0.7,
+            duration: 180,
+            useNativeDriver: true,
+          }),
+          Animated.timing(opacityAnim, {
+            toValue: 0,
+            duration: 180,
+            useNativeDriver: true,
+          }),
+        ]),
       ]),
     ]).start(() => {
       setFollowButtonVisible(false);
@@ -104,15 +101,15 @@ export default function PostCard({
     ? `@${item.author.name.toLowerCase().replace(" ", "")}`
     : `@usuario_${item.author.id}`;
 
-  const userAvatar = item.author.profilePic
-    ? item.author.profilePic
-    : defaultAvatar;
+  // Extrai a primeira letra do nome ou interrogação como fallback secundário
+  const avatarInitial = item.author.name
+    ? item.author.name.charAt(0).toUpperCase()
+    : "?";
 
   const goToAuthorProfile = () => {
     router.push(`/profile/${item.author.id}` as Href);
   };
 
-  // Funções de navegação direta por ID
   const goToRatingDetails = () => {
     router.push(`/ratings/${item.id}` as Href);
   };
@@ -130,11 +127,17 @@ export default function PostCard({
       {/* Cabeçalho do Post */}
       <View style={styles.userInfoContainer}>
         <TouchableOpacity onPress={goToAuthorProfile}>
-          <Image
-            source={{ uri: userAvatar }}
-            style={styles.avatar}
-            resizeMode="cover"
-          />
+          {item.author.profilePic ? (
+            <Image
+              source={{ uri: item.author.profilePic }}
+              style={styles.avatar}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={styles.avatarPlaceholder}>
+              <Text style={styles.avatarPlaceholderText}>{avatarInitial}</Text>
+            </View>
+          )}
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -259,7 +262,6 @@ export default function PostCard({
                   </View>
                 )}
 
-                {/* Informações da Tracklist Simplificada */}
                 <View style={styles.playlistTracksPreview}>
                   {previewTracks.length > 0 ? (
                     <>
@@ -354,6 +356,19 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 22,
     backgroundColor: "#2C353F",
+  },
+  avatarPlaceholder: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#334155", // Um tom slate/cinza escuro que combina com o tema dark
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  avatarPlaceholderText: {
+    color: "#ECECEF",
+    fontSize: 18,
+    fontWeight: "700",
   },
   userTextContainer: { marginLeft: 12 },
   userName: { fontSize: 16, fontWeight: "bold", color: "#FFFFFF" },

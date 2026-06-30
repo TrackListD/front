@@ -15,8 +15,10 @@ import { getMyProfile } from "../src/service/userApi";
 export default function ReportModalScreen() {
   const router = useRouter();
 
-  const { commentId, userTargetId, reason } = useLocalSearchParams<{
+  // Recebe os IDs das telas de origem (FeedList, PostCard ou Profile)
+  const { commentId, postId, userTargetId, reason } = useLocalSearchParams<{
     commentId?: string;
+    postId?: string;
     userTargetId?: string;
     reason?: string;
   }>();
@@ -33,29 +35,31 @@ export default function ReportModalScreen() {
     setLoading(true);
 
     try {
-      // Busca o usuário logado para saber quem está denunciando.
-      // (Mesmo padrão usado no FeedList/profile: cada tela resolve o
-      // usuário atual via getMyProfile/authFetch, não existe um
-      // useAuth()/context global ainda.)
+      // Busca o usuário logado que está efetuando a denúncia
       const me = await getMyProfile();
 
-      // DTO esperado pelo @RequestBody ReportRequestDTO do Spring (camelCase)
+      // Sanitização estrita: Garante que só enviará números válidos ou null (evita 0 ou NaN)
+      const targetUser = userTargetId && userTargetId.trim() !== "" ? Number(userTargetId) : null;
+      const targetComment = commentId && commentId.trim() !== "" ? Number(commentId) : null;
+      const targetPost = postId && postId.trim() !== "" ? Number(postId) : null;
+
+      // DTO mapeado conforme esperado pelo @RequestBody ReportRequestDTO no Spring
       const reportData = {
         informerId: me.id,
-        userTargetId: userTargetId ? Number(userTargetId) : null,
-        commentTargetId: commentId ? Number(commentId) : null,
+        userTargetId: targetUser,
+        commentTargetId: targetComment,
+        postTargetId: targetPost, // Incluído para denúncias de posts/publicações
         reportReason: description,
       };
 
-      // apiClient.post já usa authFetch por dentro (injeta o token do
-      // Firebase, já resolve API_BASE_URL com /api, e já trata erros)
+      // Envia a requisição usando o cliente unificado que gerencia os tokens
       await apiClient.post("/reports", reportData);
 
       Alert.alert(
         "Denúncia Enviada",
         "Agradecemos o envio. Nossa equipe de moderação irá analisar o conteúdo.",
       );
-      router.back(); // Fecha o modal e volta para a tela anterior
+      router.back(); 
     } catch (error) {
       console.error("Erro ao enviar denúncia:", error);
       const message =

@@ -197,8 +197,8 @@ export default function FeedList({
       router.push({
         pathname: "/reportModal",
         params: { 
-          commentId: postId, 
-          userTargetId: authorId 
+          postId: String(postId), 
+          userTargetId: String(authorId) 
         }
       });
     },

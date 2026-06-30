@@ -165,6 +165,17 @@ export function ProfileView({
     [router],
   );
 
+  // Função handleReport declarada de forma explícita e segura no escopo
+  const handleReport = useCallback(
+    (postId: number, authorId: number) => {
+      router.push({
+        pathname: "/reportModal",
+        params: { postId: String(postId), userTargetId: String(authorId) }
+      });
+    },
+    [router],
+  );
+
   // Filtra a timeline do perfil pelo tipo de publicação por trás das tabs.
   const filteredPosts = useMemo(() => {
     const targetType = activeTab === "reviews" ? "RATING" : "MEDIA_LIST";
@@ -186,16 +197,40 @@ export function ProfileView({
           item={item}
           onToggleLike={handleToggleLike}
           onFollow={handleFollowAuthor}
+          onReport={handleReport}
         />
       )}
       ListHeaderComponent={
         <>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.push("/feed/global" as Href)}
-          >
-            <Ionicons name="chevron-back" size={28} color={COLORS.text} />
-          </TouchableOpacity>
+          {/* Barra de Ações do Topo */}
+          <View style={{ 
+            flexDirection: "row", 
+            justifyContent: "space-between", 
+            alignItems: "center", 
+            paddingHorizontal: 16,
+            marginTop: 60,
+            zIndex: 10 
+          }}>
+            <TouchableOpacity
+              onPress={() => router.push("/feed/global" as Href)}
+            >
+              <Ionicons name="chevron-back" size={28} color={COLORS.text} />
+            </TouchableOpacity>
+
+            {!isMe && (
+              <TouchableOpacity
+                onPress={() => {
+                  router.push({
+                    pathname: "/reportModal",
+                    params: { userTargetId: String(user.id) }
+                  });
+                }}
+                style={{ padding: 4 }}
+              >
+                <Ionicons name="flag-outline" size={22} color="#E0245E" />
+              </TouchableOpacity>
+            )}
+          </View>
 
           <View style={styles.header}>
             <Image
@@ -330,7 +365,6 @@ function FavoriteCard({ title, item }: { title: string; item: any }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
-  backButton: { marginTop: 60, marginLeft: 16, zIndex: 10 },
 
   header: {
     alignItems: "center",

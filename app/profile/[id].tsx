@@ -1,11 +1,11 @@
 // app/profile/[id].tsx
-
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { Href, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
 import { ProfileView } from "../../components/ProfileView";
 import {
   followUser,
+  getMyProfile,
   getUserById,
   unfollowUser,
   UserProfile,
@@ -14,7 +14,6 @@ import {
 export default function ProfileScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -26,12 +25,28 @@ export default function ProfileScreen() {
     try {
       setLoading(true);
 
-      const data = await getUserById(Number(id));
+      // Antes de buscar o perfil pelo id da rota, checamos se esse id é
+      // o do próprio usuário logado. Se for, redirecionamos para
+      // /profile/me — assim a tela "genérica" nunca trata o próprio
+      // usuário como um perfil externo (o que escondia/mostrava
+      // indevidamente botões como "Seguir").
+      try {
+        const myProfile = await getMyProfile();
+        if (myProfile.id === Number(id)) {
+          router.replace("/profile/me" as Href);
+          return;
+        }
+      } catch (meErr) {
+        // Se getMyProfile falhar (ex: usuário deslogado vendo perfil
+        // público), seguimos normalmente carregando o perfil pelo id —
+        // não bloqueamos a visualização por causa disso.
+        console.log("Não foi possível verificar usuário atual:", meErr);
+      }
 
+      const data = await getUserById(Number(id));
       setUser(data);
     } catch (err: any) {
       console.log("Erro ao carregar perfil:", err);
-
       if (err?.message?.includes("401") || err?.message?.includes("403")) {
         router.replace("/login");
       }
@@ -42,9 +57,7 @@ export default function ProfileScreen() {
 
   async function handleFollowPress() {
     if (!user) return;
-
     const wasFollowing = user.currentUserIsFollowing;
-
     // Atualização otimista da UI
     setUser({
       ...user,
@@ -62,10 +75,8 @@ export default function ProfileScreen() {
       }
     } catch (err: any) {
       console.log(err);
-
       // desfaz alteração
       setUser(user);
-
       if (err?.message?.includes("401") || err?.message?.includes("403")) {
         router.replace("/login");
       }

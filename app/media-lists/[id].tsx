@@ -1,20 +1,22 @@
-// Tela: Detalhe de Avaliação — exibe os dados completos de uma avaliação, com variação para dono e público.
-
+// Tela: Detalhe da Lista de Mídias — exibe a lista condicionalmente (Visão do Dono vs Visão Pública) via GET /mediaList/{id}
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import EditNoteModal from "@/src/components/EditNoteModal";
-import EditPrivacyModal from "@/src/components/EditPrivacyModal";
-import EditReviewModal from "@/src/components/EditReviewModal";
-import { StarRating } from "@/src/components/StarRating";
+import AddMediaModal from "@/src/components/AddMediaModal";
+import EditMediaListNameModal from "@/src/components/EditMediaListNameModal";
+import EditMediaListPrivacyModal from "@/src/components/EditMediaListPrivacyModal";
 import apiClient, { NormalizedError } from "@/src/service/api";
 import { toggleLike } from "@/src/service/feedApi";
-import { RatingDetailResponse, RatingResponseDto } from "@/src/types/rating";
-import { formatDateBR } from "@/src/utils/dateUtils";
+import {
+  MediaListOwnerResponseDto,
+  MediaListResponseDto,
+} from "@/src/types/mediaList";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { Href, Stack, router, useLocalSearchParams } from "expo-router";
+import { Href, router, Stack, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Image,
+  Modal,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -23,7 +25,7 @@ import {
   View,
 } from "react-native";
 
-export default function RatingDetailScreen() {
+export default function MediaListDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
@@ -31,51 +33,50 @@ export default function RatingDetailScreen() {
   // States
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<NormalizedError | null>(null);
-  const [rating, setRating] = useState<RatingDetailResponse | null>(null);
+  const [mediaList, setMediaList] = useState<
+    MediaListResponseDto | MediaListOwnerResponseDto | null
+  >(null);
 
-  // Estados para controle de visibilidade dos modais de edição
-  const [showEditReview, setShowEditReview] = useState(false);
-  const [showEditNote, setShowEditNote] = useState(false);
-  const [showEditPrivacy, setShowEditPrivacy] = useState(false);
+  // Modals visibility states
+  const [isNameModalVisible, setNameModalVisible] = useState(false);
+  const [isPrivacyModalVisible, setPrivacyModalVisible] = useState(false);
+  const [isAddMediaModalVisible, setAddMediaModalVisible] = useState(false);
+  const [isListOptionsVisible, setListOptionsVisible] = useState(false);
+  const [isDeleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
 
-  // Estados de Interação vinculados ao backend
+  // Estado de like (otimista), mesmo padrão usado em rating e no feed.
+  // OBS: MediaListResponseDto ainda não tem `likedByMe` — só `likeCount`.
+  // Iniciamos como `false` e confiamos na resposta de toggleLike() pra
+  // refletir o estado real. Quando o backend expuser likedByMe, é só
+  // trocar a inicialização abaixo para usá-lo.
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
 
+  const fetchDetail = async () => {
+    if (!id) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await apiClient.get<
+        MediaListResponseDto | MediaListOwnerResponseDto
+      >("/mediaList/" + id);
+      setMediaList(response.data);
+
+      const fetchedPublicData =
+        "publicData" in response.data
+          ? (response.data as MediaListOwnerResponseDto).publicData
+          : (response.data as MediaListResponseDto);
+      setLikeCount(Number(fetchedPublicData.likeCount ?? 0));
+      setLiked(!!(fetchedPublicData as any).likedByMe);
+    } catch (err) {
+      setError(err as NormalizedError);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchRatingDetail = async () => {
-      if (!id) return;
-
-      setLoading(true);
-      setError(null);
-
-      try {
-        const response = await apiClient.get<RatingDetailResponse>(
-          "/ratings/" + id,
-        );
-        console.log(
-          "CONTEÚDO REAL DA API:",
-          JSON.stringify(response.data, null, 2),
-        );
-        setRating(response.data);
-
-        // Normalização do acesso aos dados compartilhados
-        const fetchedPublicData =
-          (response.data as any).publicData ||
-          (response.data as any).publicDto ||
-          response.data;
-
-        // Confirmação direta do likedByMe vindo do backend
-        setLikeCount(fetchedPublicData.likeCount ?? 0);
-        setLiked(!!fetchedPublicData.likedByMe); // Agora o coração inicia preenchido corretamente
-      } catch (err) {
-        setError(err as NormalizedError);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchRatingDetail();
+    fetchDetail();
   }, [id]);
 
   // Color theme configurations
@@ -86,45 +87,55 @@ export default function RatingDetailScreen() {
     subText: isDark ? "#9BA1A6" : "#687076",
     border: isDark ? "#2C2F33" : "#E4E7EB",
     tintColor: isDark ? "#38BDF8" : "#0A7EA4",
-    starColor: "#FFC107",
     badgeBg: isDark ? "#2A2D31" : "#F1F3F5",
     errorBg: isDark ? "#2A1818" : "#FEF2F2",
-    errorBorder: isDark ? "#5C1E1E" : "#FCA5A5",
     errorText: isDark ? "#F87171" : "#B91C1C",
-    avatarBg: isDark ? "#334155" : "#E2E8F0",
+    starColor: "#FFC107",
     likeColor: "#EF4444",
   };
 
-  const translateStatus = (status: string) => {
-    switch (status) {
-      case "ACTIVE":
-        return { label: "Ativa", color: "#10B981" };
-      case "SUSPENDED":
-        return { label: "Suspensa", color: "#F59E0B" };
-      case "BANNED":
-        return { label: "Banida", color: "#EF4444" };
-      case "HIDDEN":
-        return { label: "Oculta", color: "#6B7280" };
-      default:
-        return { label: status, color: "#6B7280" };
+  const handleToggleFavorite = async () => {
+    if (!mediaList || !id) return;
+    const isFav = publicData.isFavorite;
+
+    try {
+      if (isFav) {
+        await apiClient.delete(`/mediaList/${id}/favorite`);
+      } else {
+        await apiClient.post(`/mediaList/${id}/favorite`);
+      }
+
+      setMediaList((prev) => {
+        if (!prev) return null;
+        const isPrevOwner = "publicData" in prev;
+        if (isPrevOwner) {
+          const ownerPrev = prev as MediaListOwnerResponseDto;
+          return {
+            ...ownerPrev,
+            publicData: {
+              ...ownerPrev.publicData,
+              isFavorite: !isFav,
+            },
+          };
+        } else {
+          const publicPrev = prev as MediaListResponseDto;
+          return {
+            ...publicPrev,
+            isFavorite: !isFav,
+          };
+        }
+      });
+    } catch (err) {
+      const normalized = err as NormalizedError;
+      Alert.alert(
+        "Erro",
+        normalized.message || "Não foi possível atualizar o favorito.",
+      );
     }
   };
 
-  const translatePrivacy = (
-    privacy: string,
-  ): { label: string; icon: "public" | "people" | "lock" | "visibility" } => {
-    switch (privacy) {
-      case "PUBLIC":
-        return { label: "Público", icon: "public" };
-      case "JUST_FOLLOWERS":
-        return { label: "Seguidores", icon: "people" };
-      case "PRIVATE":
-        return { label: "Privado", icon: "lock" };
-      default:
-        return { label: privacy, icon: "visibility" };
-    }
-  };
-
+  // Toggle de curtida (publication like) — mesmo padrão otimista do
+  // FeedList/rating: atualiza a UI antes da resposta e desfaz em caso de erro.
   const handleToggleLike = async () => {
     if (!id) return;
 
@@ -137,10 +148,62 @@ export default function RatingDetailScreen() {
       setLiked(result.liked);
       setLikeCount(result.likesCount);
     } catch (err) {
-      console.error("Erro ao curtir avaliação:", id, err);
+      console.error("Erro ao curtir lista de mídias:", id, err);
       setLiked(wasLiked);
       setLikeCount((prev) => (wasLiked ? prev + 1 : prev - 1));
     }
+  };
+
+  const handleConfirmDeleteList = async () => {
+    setDeleteConfirmVisible(false);
+    setLoading(true);
+    try {
+      await apiClient.delete(`/mediaList/${id}`);
+      router.replace("/media-lists/user/me" as Href);
+    } catch (err) {
+      const normalized = err as NormalizedError;
+      Alert.alert(
+        "Erro",
+        normalized.message || "Não foi possível excluir a lista.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRemoveMedia = async (mediaId: string) => {
+    if (!id) return;
+    try {
+      const response = await apiClient.delete<MediaListOwnerResponseDto>(
+        `/mediaList/${id}/medias/${mediaId}`,
+      );
+      setMediaList(response.data);
+    } catch (err) {
+      const normalized = err as NormalizedError;
+      Alert.alert(
+        "Erro",
+        normalized.message || "Não foi possível remover a mídia da lista.",
+      );
+    }
+  };
+
+  const handleOpenListOptions = () => {
+    setListOptionsVisible(true);
+  };
+
+  const handleSelectEditName = () => {
+    setListOptionsVisible(false);
+    setNameModalVisible(true);
+  };
+
+  const handleSelectEditPrivacy = () => {
+    setListOptionsVisible(false);
+    setPrivacyModalVisible(true);
+  };
+
+  const handleSelectDeleteList = () => {
+    setListOptionsVisible(false);
+    setDeleteConfirmVisible(true);
   };
 
   if (loading) {
@@ -156,13 +219,8 @@ export default function RatingDetailScreen() {
     );
   }
 
-  if (error || !rating) {
+  if (error || !mediaList) {
     const is404 = error?.status === 404;
-    const errorMessage = is404
-      ? "Avaliação não encontrada"
-      : error?.message ||
-        "Ocorreu um erro ao carregar os detalhes da avaliação.";
-
     return (
       <SafeAreaView
         style={[styles.safeArea, { backgroundColor: themeStyles.background }]}
@@ -174,52 +232,51 @@ export default function RatingDetailScreen() {
               styles.errorCard,
               {
                 backgroundColor: themeStyles.errorBg,
-                borderColor: themeStyles.errorBorder,
+                borderColor: themeStyles.errorText,
               },
             ]}
           >
             <MaterialIcons
-              name={is404 ? "search-off" : "error-outline"}
-              size={48}
+              name="error-outline"
+              size={44}
               color={themeStyles.errorText}
             />
             <Text style={[styles.errorTitle, { color: themeStyles.errorText }]}>
-              {is404 ? "Não Encontrado" : "Erro de Conexão"}
+              {is404 ? "Lista não encontrada" : "Erro de Conexão"}
             </Text>
             <Text style={[styles.errorBody, { color: themeStyles.errorText }]}>
-              {errorMessage}
+              {is404
+                ? "A lista de mídias solicitada não pôde ser encontrada no servidor."
+                : error?.message ||
+                  "Ocorreu um erro ao carregar os detalhes da lista."}
             </Text>
+            <Pressable
+              style={[
+                styles.retryButton,
+                { backgroundColor: themeStyles.tintColor },
+              ]}
+              onPress={fetchDetail}
+            >
+              <Text style={styles.retryButtonText}>Tentar Novamente</Text>
+            </Pressable>
           </View>
         </View>
       </SafeAreaView>
     );
   }
 
-  const isOwner = !!rating && ("publicData" in rating || "publicDto" in rating);
-
-  const publicData: RatingResponseDto = rating
-    ? (rating as any).publicData || (rating as any).publicDto || rating
-    : null;
-
-  if (!publicData || !publicData.targetMedia) {
-    return (
-      <SafeAreaView
-        style={[styles.safeArea, { backgroundColor: themeStyles.background }]}
-      >
-        <Stack.Screen options={{ title: "Carregando Mídia..." }} />
-        <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color={themeStyles.tintColor} />
-        </View>
-      </SafeAreaView>
-    );
-  }
+  // Type Guard
+  const isOwner = mediaList && "publicData" in mediaList;
+  const publicData = isOwner
+    ? (mediaList as MediaListOwnerResponseDto).publicData
+    : (mediaList as MediaListResponseDto);
 
   const handleReport = () => {
     router.push({
       pathname: "/reportModal",
       params: {
         commentId: publicData.id,
-        userTargetId: publicData.author.id,
+        userTargetId: publicData.authorId,
       },
     });
   };
@@ -230,353 +287,336 @@ export default function RatingDetailScreen() {
     >
       <Stack.Screen
         options={{
-          title: "Detalhe da Avaliação",
-          headerStyle: {
-            backgroundColor: themeStyles.cardBackground,
-          },
+          title: "",
+          headerStyle: { backgroundColor: themeStyles.cardBackground },
           headerTintColor: themeStyles.textColor,
           headerShadowVisible: false,
         }}
       />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View
-          style={[styles.card, { backgroundColor: themeStyles.cardBackground }]}
-        >
-          <View style={styles.authorHeader}>
-            <View style={styles.authorMeta}>
-              {publicData.author.profilePic ? (
+        {/* Capa da Lista */}
+        {/* Se a lista tiver coverImageUrl, mostramos a capa real.
+    Caso contrário, caímos no mesmo grid de até 4 capas usado no
+    PostCard do feed (playlistGridCovers), com fallback de ícone
+    quando não há nenhuma mídia. */}
+        {publicData.coverImageUrl ? (
+          <View
+            style={[
+              styles.coverContainer,
+              { backgroundColor: isDark ? "#2A2D31" : "#E2E8F0" },
+            ]}
+          >
+            <Image
+              source={{ uri: publicData.coverImageUrl }}
+              style={styles.coverImage}
+              resizeMode="cover"
+            />
+          </View>
+        ) : publicData.medias && publicData.medias.length > 0 ? (
+          <View
+            style={[
+              styles.coverContainer,
+              styles.coverGrid,
+              { backgroundColor: isDark ? "#12161A" : "#E2E8F0" },
+            ]}
+          >
+            {Array.from(publicData.medias)
+              .slice(0, 4)
+              .map((media, index) => (
                 <Image
-                  source={{ uri: publicData.author.profilePic }}
-                  style={styles.avatarImage}
-                />
-              ) : (
-                <View
+                  key={media.id ?? index}
+                  source={{
+                    uri: media.coverUrl
+                      ? media.coverUrl
+                      : "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300",
+                  }}
                   style={[
-                    styles.avatar,
-                    { backgroundColor: themeStyles.avatarBg },
+                    styles.coverGridImage,
+                    index % 2 === 0 && styles.coverGridImageLeft,
+                    index < 2 && styles.coverGridImageTop,
                   ]}
-                >
-                  <Text
-                    style={[
-                      styles.avatarText,
-                      { color: themeStyles.textColor },
-                    ]}
-                  >
-                    {publicData.author.name
-                      ? publicData.author.name.charAt(0).toUpperCase()
-                      : "?"}
-                  </Text>
-                </View>
-              )}
-              <View>
-                <Text
-                  style={[styles.authorName, { color: themeStyles.textColor }]}
-                >
-                  {publicData.author.name}
-                </Text>
-                <Text style={[styles.dateText, { color: themeStyles.subText }]}>
-                  Publicado em {formatDateBR(publicData.publicationDate)}
-                </Text>
-              </View>
-            </View>
+                />
+              ))}
+          </View>
+        ) : (
+          <View
+            style={[
+              styles.coverContainer,
+              { backgroundColor: isDark ? "#2A2D31" : "#E2E8F0" },
+            ]}
+          >
+            <MaterialIcons
+              name={
+                publicData.typeOfList === "ALBUM" ? "album" : "library-music"
+              }
+              size={64}
+              color={themeStyles.subText}
+            />
+          </View>
+        )}
+
+        {/* Título e Autor da Lista */}
+        <View style={styles.metaContainer}>
+          {/* Linha do título com o menu de opções do dono ao lado */}
+          <View style={styles.titleRow}>
+            <Text
+              style={[styles.listName, { color: themeStyles.textColor }]}
+              numberOfLines={2}
+            >
+              {publicData.listName}
+            </Text>
 
             {isOwner && (
-              <View
-                style={[
-                  styles.statusBadge,
-                  {
-                    backgroundColor:
-                      translateStatus(rating.status).color + "15",
-                  },
+              <Pressable
+                onPress={handleOpenListOptions}
+                style={({ pressed }) => [
+                  styles.optionsButton,
+                  { backgroundColor: themeStyles.badgeBg },
+                  pressed && styles.pressed,
                 ]}
+                hitSlop={8}
               >
-                <Text
-                  style={[
-                    styles.statusText,
-                    { color: translateStatus(rating.status).color },
-                  ]}
-                >
-                  {translateStatus(rating.status).label}
-                </Text>
-              </View>
+                <MaterialIcons
+                  name="more-vert"
+                  size={22}
+                  color={themeStyles.textColor}
+                />
+              </Pressable>
             )}
           </View>
 
-          <View
-            style={[styles.divider, { backgroundColor: themeStyles.border }]}
-          />
-
-          <View style={styles.sectionContainer}>
-            <Text style={[styles.sectionLabel, { color: themeStyles.subText }]}>
-              Mídia Avaliada
+          <View style={styles.authorRow}>
+            <MaterialIcons
+              name="account-circle"
+              size={20}
+              color={themeStyles.subText}
+            />
+            <Text style={[styles.authorName, { color: themeStyles.textColor }]}>
+              {publicData.authorName || `Usuário #${publicData.authorId}`}
             </Text>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 12,
-                marginTop: 8,
-              }}
-            >
-              {publicData.targetMedia.coverUrl ? (
-                <Image
-                  source={{ uri: publicData.targetMedia.coverUrl }}
-                  style={{ width: 60, height: 60, borderRadius: 8 }}
-                />
-              ) : (
-                <View
-                  style={{
-                    width: 60,
-                    height: 60,
-                    borderRadius: 8,
-                    backgroundColor: themeStyles.badgeBg,
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <MaterialIcons
-                    name={
-                      publicData.targetMedia.type === "ALBUM"
-                        ? "album"
-                        : "music-note"
-                    }
-                    size={28}
-                    color={themeStyles.tintColor}
-                  />
-                </View>
-              )}
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={[styles.targetTitle, { color: themeStyles.textColor }]}
-                  numberOfLines={2}
-                >
-                  {publicData.targetMedia.title}
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 14,
-                    color: themeStyles.subText,
-                    marginTop: 2,
-                  }}
-                >
-                  {publicData.targetMedia.artist}
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 12,
-                    color: themeStyles.subText,
-                    marginTop: 1,
-                  }}
-                >
-                  Duração: {publicData.targetMedia.formattedDuration}
-                </Text>
-              </View>
-            </View>
           </View>
 
-          <View style={styles.sectionContainer}>
-            <Text style={[styles.sectionLabel, { color: themeStyles.subText }]}>
-              Nota
+          {/* Estatísticas */}
+          <View style={styles.statsRow}>
+            <Text style={[styles.statsText, { color: themeStyles.subText }]}>
+              {publicData.formattedDuration || "0s"}
             </Text>
-            <View style={styles.ratingRow}>
-              <StarRating
-                rating={publicData.ratingNote}
-                size={28}
-                disabled={true}
-                filledColor={themeStyles.starColor}
-                emptyColor={themeStyles.subText}
-              />
-              <Text
-                style={[
-                  styles.ratingValueText,
-                  { color: themeStyles.textColor },
+            <Text style={[styles.statsDot, { color: themeStyles.subText }]}>
+              •
+            </Text>
+            <Text style={[styles.statsText, { color: themeStyles.subText }]}>
+              {publicData.medias ? publicData.medias.length : 0}{" "}
+              {publicData.typeOfList === "ALBUM"
+                ? publicData.medias.length === 1
+                  ? "álbum"
+                  : "álbuns"
+                : publicData.medias.length === 1
+                  ? "música"
+                  : "músicas"}
+            </Text>
+          </View>
+        </View>
+
+        {/* Barra de Ações (Action Bar) */}
+        <View style={styles.actionBar}>
+          <View style={styles.actionBarLeft}>
+            {isOwner && (
+              <Pressable
+                onPress={() => setAddMediaModalVisible(true)}
+                style={({ pressed }) => [
+                  styles.addButton,
+                  { backgroundColor: "#10B981" },
+                  pressed && styles.pressed,
                 ]}
               >
-                {publicData.ratingNote.toFixed(1)} / 5.0
-              </Text>
+                <MaterialIcons name="add" size={28} color="#FFFFFF" />
+              </Pressable>
+            )}
 
-              {isOwner && (
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.editIcon,
-                    pressed && styles.pressed,
-                  ]}
-                  onPress={() => setShowEditNote(true)}
-                >
-                  <MaterialIcons
-                    name="edit"
-                    size={18}
-                    color={themeStyles.tintColor}
-                  />
-                </Pressable>
-              )}
-            </View>
-          </View>
-
-          <View style={styles.sectionContainer}>
-            <View style={styles.rowJustify}>
-              <Text
-                style={[styles.sectionLabel, { color: themeStyles.subText }]}
-              >
-                Resenha
-              </Text>
-
-              {isOwner && (
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.editIcon,
-                    pressed && styles.pressed,
-                  ]}
-                  onPress={() => setShowEditReview(true)}
-                >
-                  <MaterialIcons
-                    name="edit"
-                    size={18}
-                    color={themeStyles.tintColor}
-                  />
-                </Pressable>
-              )}
-            </View>
-            <View
-              style={[
-                styles.reviewContainer,
-                {
-                  backgroundColor: isDark ? "#151719" : "#F8F9FA",
-                  borderColor: themeStyles.border,
-                },
-              ]}
-            >
-              <Text
-                style={[styles.reviewText, { color: themeStyles.textColor }]}
-              >
-                {publicData.review || "Sem opinião escrita para esta mídia."}
-              </Text>
-            </View>
-          </View>
-
-          {isOwner && (
-            <View style={styles.sectionContainer}>
-              <Text
-                style={[styles.sectionLabel, { color: themeStyles.subText }]}
-              >
-                Privacidade
-              </Text>
-              <View style={styles.privacyRow}>
-                <View
-                  style={[
-                    styles.privacyBadge,
-                    { backgroundColor: themeStyles.badgeBg },
-                  ]}
-                >
-                  <MaterialIcons
-                    name={translatePrivacy(rating.whoCanSee).icon}
-                    size={16}
-                    color={themeStyles.textColor}
-                    style={styles.privacyIcon}
-                  />
-                  <Text
-                    style={[
-                      styles.privacyText,
-                      { color: themeStyles.textColor },
-                    ]}
-                  >
-                    {translatePrivacy(rating.whoCanSee).label}
-                  </Text>
-                </View>
-
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.editIcon,
-                    pressed && styles.pressed,
-                  ]}
-                  onPress={() => setShowEditPrivacy(true)}
-                >
-                  <MaterialIcons
-                    name="edit"
-                    size={18}
-                    color={themeStyles.tintColor}
-                  />
-                </Pressable>
-              </View>
-            </View>
-          )}
-
-          <View
-            style={[styles.divider, { backgroundColor: themeStyles.border }]}
-          />
-
-          <View style={styles.interactionRow}>
-            {/* Botão de Curtida Integrado */}
+            {/* Curtir (like) — coração vermelho quando curtido */}
             <Pressable
-              style={({ pressed }) => [
-                styles.interactionItem,
-                pressed && styles.pressed,
-              ]}
               onPress={handleToggleLike}
+              style={styles.actionButton}
               hitSlop={8}
             >
               <MaterialIcons
                 name={liked ? "favorite" : "favorite-border"}
-                size={20}
+                size={28}
                 color={liked ? themeStyles.likeColor : themeStyles.subText}
               />
-              <Text
-                style={[
-                  styles.interactionText,
-                  {
-                    color: liked
-                      ? themeStyles.likeColor
-                      : themeStyles.textColor,
-                  },
-                ]}
-              >
-                {likeCount} {likeCount === 1 ? "Curtida" : "Curtidas"}
-              </Text>
             </Pressable>
+            {likeCount > 0 && (
+              <Text
+                style={{
+                  color: liked ? themeStyles.likeColor : themeStyles.subText,
+                  fontSize: 13,
+                  fontWeight: "600",
+                  marginLeft: -10,
+                }}
+              >
+                {likeCount}
+              </Text>
+            )}
 
-            <View style={styles.interactionItem}>
+            {/* Favoritar a lista (bookmark) — só o dono pode favoritar a própria lista */}
+            {isOwner && (
+              <Pressable
+                onPress={handleToggleFavorite}
+                style={styles.actionButton}
+                hitSlop={8}
+              >
+                <MaterialIcons
+                  name={publicData.isFavorite ? "bookmark" : "bookmark-border"}
+                  size={28}
+                  color={
+                    publicData.isFavorite ? "#F59E0B" : themeStyles.subText
+                  }
+                />
+              </Pressable>
+            )}
+
+            {/* DEBITO TECNICO: Sem funcionalidade de compartilhamento no backend. */}
+            <Pressable
+              onPress={() =>
+                Alert.alert(
+                  "Compartilhar",
+                  "Sem funcionalidade de compartilhamento no backend.",
+                )
+              }
+              style={styles.actionButton}
+            >
               <MaterialIcons
-                name="chat-bubble-outline"
-                size={20}
+                name="share"
+                size={24}
                 color={themeStyles.subText}
               />
-              <Text
-                style={[
-                  styles.interactionText,
-                  { color: themeStyles.textColor },
-                ]}
-              >
-                {publicData.commentCount}{" "}
-                {publicData.commentCount === 1 ? "Comentário" : "Comentários"}
-              </Text>
-            </View>
+            </Pressable>
 
+            {/* Denunciar lista */}
             <Pressable
-              style={({ pressed }) => [
-                styles.interactionItem,
-                pressed && styles.pressed,
-              ]}
               onPress={handleReport}
+              style={styles.actionButton}
               hitSlop={8}
             >
               <MaterialIcons
                 name="flag"
-                size={20}
+                size={24}
                 color={themeStyles.subText}
               />
-              <Text
-                style={[
-                  styles.interactionText,
-                  { color: themeStyles.textColor },
-                ]}
-              >
-                Denunciar
-              </Text>
             </Pressable>
           </View>
         </View>
 
+        {/* Lista de Mídias */}
+        <View
+          style={[
+            styles.card,
+            { backgroundColor: themeStyles.cardBackground, marginTop: 16 },
+          ]}
+        >
+          <Text style={[styles.sectionTitle, { color: themeStyles.textColor }]}>
+            Conteúdo da Lista
+          </Text>
+
+          {!publicData.medias || publicData.medias.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <MaterialIcons
+                name="library-music"
+                size={40}
+                color={themeStyles.subText}
+                style={styles.emptyIcon}
+              />
+              <Text style={[styles.emptyText, { color: themeStyles.subText }]}>
+                Nenhuma mídia adicionada a esta lista.
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.mediaList}>
+              {publicData.medias.map((media) => (
+                <View
+                  key={media.id}
+                  style={[
+                    styles.mediaCard,
+                    { borderColor: themeStyles.border },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.mediaIconBg,
+                      { backgroundColor: themeStyles.badgeBg },
+                    ]}
+                  >
+                    {media.coverUrl ? (
+                      <Image
+                        source={{ uri: media.coverUrl }}
+                        style={{ width: 40, height: 40, borderRadius: 8 }}
+                      />
+                    ) : (
+                      <MaterialIcons
+                        name={
+                          publicData.typeOfList === "ALBUM"
+                            ? "album"
+                            : "music-note"
+                        }
+                        size={20}
+                        color={themeStyles.tintColor}
+                      />
+                    )}
+                  </View>
+                  <View style={styles.mediaInfo}>
+                    <Text
+                      style={[
+                        styles.mediaTitle,
+                        { color: themeStyles.textColor },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {media.title}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.mediaSubtitle,
+                        { color: themeStyles.subText },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {media.artist} • {media.formattedDuration}
+                    </Text>
+                  </View>
+                  <Pressable
+                    onPress={() => {
+                      if (isOwner) {
+                        Alert.alert("Opções da Mídia", "O que deseja fazer?", [
+                          {
+                            text: "Remover da Lista",
+                            style: "destructive",
+                            onPress: () => handleRemoveMedia(media.id),
+                          },
+                          { text: "Cancelar", style: "cancel" },
+                        ]);
+                      } else {
+                        Alert.alert(
+                          "Opções da Mídia",
+                          "Sem opções adicionais disponíveis.",
+                        );
+                      }
+                    }}
+                    style={styles.moreButton}
+                  >
+                    <MaterialIcons
+                      name="more-vert"
+                      size={20}
+                      color={themeStyles.subText}
+                    />
+                  </Pressable>
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+
+        {/* Aba de Comentários — mesmo padrão usado na tela de rating */}
         <View
           style={[
             styles.card,
@@ -626,29 +666,210 @@ export default function RatingDetailScreen() {
         </View>
       </ScrollView>
 
-      {isOwner && (
+      {isOwner && mediaList && (
         <>
-          <EditReviewModal
-            visible={showEditReview}
-            onClose={() => setShowEditReview(false)}
-            currentReview={publicData.review || ""}
-            ratingId={Number(id)}
-            onSuccess={setRating}
+          <EditMediaListNameModal
+            visible={isNameModalVisible}
+            currentName={publicData.listName}
+            listId={Number(id)}
+            onClose={() => setNameModalVisible(false)}
+            onSuccess={setMediaList}
           />
-          <EditNoteModal
-            visible={showEditNote}
-            onClose={() => setShowEditNote(false)}
-            currentNote={publicData.ratingNote}
-            ratingId={Number(id)}
-            onSuccess={setRating}
+          <EditMediaListPrivacyModal
+            visible={isPrivacyModalVisible}
+            currentPrivacy={
+              "whoCanSee" in mediaList
+                ? (mediaList as MediaListOwnerResponseDto).whoCanSee
+                : "PUBLIC"
+            }
+            listId={Number(id)}
+            onClose={() => setPrivacyModalVisible(false)}
+            onSuccess={setMediaList}
           />
-          <EditPrivacyModal
-            visible={showEditPrivacy}
-            onClose={() => setShowEditPrivacy(false)}
-            currentPrivacy={rating.whoCanSee}
-            ratingId={Number(id)}
-            onSuccess={setRating}
+          <AddMediaModal
+            visible={isAddMediaModalVisible}
+            listId={Number(id)}
+            typeOfList={publicData.typeOfList}
+            onClose={() => setAddMediaModalVisible(false)}
+            onSuccess={setMediaList}
           />
+
+          {/* Menu de opções da lista (editar nome/privacidade/excluir).
+              Modal customizado em vez de Alert.alert, pois Alert.alert
+              não tem implementação visual no Expo Web. */}
+          <Modal
+            visible={isListOptionsVisible}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setListOptionsVisible(false)}
+          >
+            <Pressable
+              style={styles.modalOverlay}
+              onPress={() => setListOptionsVisible(false)}
+            >
+              <Pressable
+                style={[
+                  styles.optionsSheet,
+                  { backgroundColor: themeStyles.cardBackground },
+                ]}
+                onPress={(e) => e.stopPropagation()}
+              >
+                <Text
+                  style={[
+                    styles.optionsSheetTitle,
+                    { color: themeStyles.textColor },
+                  ]}
+                >
+                  Opções da Lista
+                </Text>
+
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.optionsSheetItem,
+                    pressed && styles.pressed,
+                  ]}
+                  onPress={handleSelectEditName}
+                >
+                  <MaterialIcons
+                    name="edit"
+                    size={20}
+                    color={themeStyles.textColor}
+                  />
+                  <Text
+                    style={[
+                      styles.optionsSheetItemText,
+                      { color: themeStyles.textColor },
+                    ]}
+                  >
+                    Editar Nome
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.optionsSheetItem,
+                    pressed && styles.pressed,
+                  ]}
+                  onPress={handleSelectEditPrivacy}
+                >
+                  <MaterialIcons
+                    name="lock-outline"
+                    size={20}
+                    color={themeStyles.textColor}
+                  />
+                  <Text
+                    style={[
+                      styles.optionsSheetItemText,
+                      { color: themeStyles.textColor },
+                    ]}
+                  >
+                    Editar Privacidade
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.optionsSheetItem,
+                    pressed && styles.pressed,
+                  ]}
+                  onPress={handleSelectDeleteList}
+                >
+                  <MaterialIcons name="delete" size={20} color="#EF4444" />
+                  <Text
+                    style={[styles.optionsSheetItemText, { color: "#EF4444" }]}
+                  >
+                    Excluir Lista
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.optionsSheetCancel,
+                    { borderColor: themeStyles.border },
+                    pressed && styles.pressed,
+                  ]}
+                  onPress={() => setListOptionsVisible(false)}
+                >
+                  <Text
+                    style={[
+                      styles.optionsSheetItemText,
+                      { color: themeStyles.subText },
+                    ]}
+                  >
+                    Cancelar
+                  </Text>
+                </Pressable>
+              </Pressable>
+            </Pressable>
+          </Modal>
+
+          {/* Confirmação de exclusão (também não usa Alert.alert) */}
+          <Modal
+            visible={isDeleteConfirmVisible}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setDeleteConfirmVisible(false)}
+          >
+            <Pressable
+              style={styles.modalOverlay}
+              onPress={() => setDeleteConfirmVisible(false)}
+            >
+              <Pressable
+                style={[
+                  styles.confirmCard,
+                  { backgroundColor: themeStyles.cardBackground },
+                ]}
+                onPress={(e) => e.stopPropagation()}
+              >
+                <Text
+                  style={[
+                    styles.optionsSheetTitle,
+                    { color: themeStyles.textColor },
+                  ]}
+                >
+                  Excluir Lista
+                </Text>
+                <Text
+                  style={[styles.confirmBody, { color: themeStyles.subText }]}
+                >
+                  Tem certeza que deseja excluir esta lista permanentemente?
+                  Esta ação não pode ser desfeita.
+                </Text>
+
+                <View style={styles.confirmActions}>
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.confirmButton,
+                      { backgroundColor: themeStyles.badgeBg },
+                      pressed && styles.pressed,
+                    ]}
+                    onPress={() => setDeleteConfirmVisible(false)}
+                  >
+                    <Text
+                      style={{
+                        color: themeStyles.textColor,
+                        fontWeight: "600",
+                      }}
+                    >
+                      Cancelar
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.confirmButton,
+                      { backgroundColor: "#EF4444" },
+                      pressed && styles.pressed,
+                    ]}
+                    onPress={handleConfirmDeleteList}
+                  >
+                    <Text style={{ color: "#FFFFFF", fontWeight: "600" }}>
+                      Excluir
+                    </Text>
+                  </Pressable>
+                </View>
+              </Pressable>
+            </Pressable>
+          </Modal>
         </>
       )}
     </SafeAreaView>
@@ -668,6 +889,96 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 16,
   },
+  coverContainer: {
+    width: 160,
+    height: 160,
+    borderRadius: 16,
+    alignSelf: "center",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+    marginBottom: 20,
+  },
+  metaContainer: {
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 20,
+  },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    width: "100%",
+  },
+  optionsButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  listName: {
+    fontSize: 24,
+    fontWeight: "800",
+    textAlign: "center",
+    flexShrink: 1,
+  },
+  authorRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  authorName: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  statsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  statsText: {
+    fontSize: 13,
+    fontWeight: "500",
+  },
+  statsDot: {
+    fontSize: 13,
+  },
+  actionBar: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 10,
+    marginBottom: 10,
+  },
+  actionBarLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+  },
+  addButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  actionButton: {
+    padding: 6,
+  },
+  pressed: {
+    opacity: 0.7,
+  },
   card: {
     borderRadius: 16,
     padding: 20,
@@ -677,133 +988,56 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
-  authorHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    marginBottom: 14,
   },
-  authorMeta: {
-    flexDirection: "row",
+  emptyContainer: {
     alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 32,
+    gap: 8,
+  },
+  emptyIcon: {
+    opacity: 0.5,
+  },
+  emptyText: {
+    fontSize: 14,
+    fontWeight: "500",
+    textAlign: "center",
+  },
+  mediaList: {
     gap: 12,
   },
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  mediaCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    gap: 12,
+  },
+  mediaIconBg: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
     justifyContent: "center",
     alignItems: "center",
   },
-  avatarImage: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  mediaInfo: {
+    flex: 1,
+    gap: 2,
   },
-  avatarText: {
-    fontSize: 18,
-    fontWeight: "700",
-  },
-  authorName: {
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  dateText: {
-    fontSize: 12,
-    marginTop: 2,
-  },
-  statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  divider: {
-    height: 1,
-    marginVertical: 16,
-  },
-  sectionContainer: {
-    gap: 6,
-    marginBottom: 16,
-  },
-  sectionLabel: {
-    fontSize: 11,
-    fontWeight: "700",
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
-  },
-  targetTitle: {
-    fontSize: 20,
-    fontWeight: "800",
-  },
-  targetIdSubtitle: {
-    fontSize: 12,
-    fontStyle: "italic",
-  },
-  ratingRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  ratingValueText: {
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  editIcon: {
-    padding: 6,
-    borderRadius: 8,
-  },
-  pressed: {
-    opacity: 0.6,
-  },
-  rowJustify: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  reviewContainer: {
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 14,
-    marginTop: 4,
-  },
-  reviewText: {
+  mediaTitle: {
     fontSize: 15,
-    lineHeight: 22,
+    fontWeight: "700",
   },
-  privacyRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
+  mediaSubtitle: {
+    fontSize: 12,
   },
-  privacyBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  privacyIcon: {
-    marginRight: 6,
-  },
-  privacyText: {
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  interactionRow: {
-    flexDirection: "row",
-    gap: 20,
-  },
-  interactionItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  interactionText: {
-    fontSize: 14,
-    fontWeight: "600",
+  moreButton: {
+    padding: 4,
   },
   commentsTitle: {
     fontSize: 18,
@@ -834,11 +1068,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     maxWidth: 340,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
   },
   errorTitle: {
     fontSize: 18,
@@ -848,5 +1077,101 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: "center",
     lineHeight: 20,
+    marginBottom: 8,
+  },
+  retryButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: "#FFFFFF",
+    fontWeight: "600",
+    fontSize: 14,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+  },
+  optionsSheet: {
+    width: "100%",
+    maxWidth: 360,
+    borderRadius: 16,
+    padding: 16,
+    gap: 4,
+  },
+  optionsSheetTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  optionsSheetItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+  },
+  optionsSheetItemText: {
+    fontSize: 15,
+    fontWeight: "500",
+  },
+  optionsSheetCancel: {
+    marginTop: 8,
+    paddingVertical: 12,
+    alignItems: "center",
+    borderTopWidth: 1,
+  },
+  confirmCard: {
+    width: "100%",
+    maxWidth: 360,
+    borderRadius: 16,
+    padding: 20,
+    gap: 8,
+  },
+  confirmBody: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 8,
+  },
+  confirmActions: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  confirmButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  coverImage: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 16,
+  },
+  coverGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "flex-start",
+    alignItems: "flex-start",
+    overflow: "hidden",
+    padding: 2,
+  },
+  coverGridImage: {
+    width: 77,
+    height: 77,
+    borderRadius: 2,
+    marginBottom: 2,
+  },
+  coverGridImageLeft: {
+    marginRight: 2,
+  },
+  coverGridImageTop: {
+    marginBottom: 2,
   },
 });

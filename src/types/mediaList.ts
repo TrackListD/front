@@ -9,13 +9,14 @@ export interface MediaListResponseDto {
   typeOfList: ListType;
   listName: string;
   isFavorite: boolean;
-  idAuthor: number;
+  authorId: number;
   authorName: string;
   medias: MediaMinDto[];
   totalDurationMs: number;
   formattedDuration: string;
   likeCount: number;
   commentCount: number;
+  coverImageUrl: string | null;
 }
 
 export interface MediaListOwnerResponseDto {

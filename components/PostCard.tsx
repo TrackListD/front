@@ -201,6 +201,7 @@ export default function PostCard({
           const previewCovers = mediaItems.slice(0, 4);
           const previewTracks = mediaItems.slice(0, 2);
           const remainingCount = mediaItems.length - previewTracks.length;
+          const hasCover = !!item.coverImageUrl;
 
           return (
             <TouchableOpacity
@@ -218,35 +219,45 @@ export default function PostCard({
               <Text style={styles.playlistTitleText}>{item.content}</Text>
 
               <View style={styles.playlistPreviewBody}>
-                {/* Grid de Capas Reais (com fallback genérico) */}
-                <View style={styles.playlistGridCovers}>
-                  {previewCovers.length > 0 ? (
-                    previewCovers.map((media, index) => (
-                      <Image
-                        key={media.id ?? index}
-                        source={{
-                          uri: media.coverUrl ? media.coverUrl : defaultCover,
-                        }}
-                        style={styles.gridImageSquare}
-                      />
-                    ))
-                  ) : (
-                    <View
-                      style={[
-                        styles.gridImageSquare,
-                        {
-                          width: "100%",
-                          height: "100%",
-                          backgroundColor: "#2C353F",
-                          justifyContent: "center",
-                          alignItems: "center",
-                        },
-                      ]}
-                    >
-                      <Ionicons name="disc-outline" size={24} color="#8A8A8F" />
-                    </View>
-                  )}
-                </View>
+                {hasCover ? (
+                  <Image
+                    source={{ uri: item.coverImageUrl! }}
+                    style={styles.playlistSingleCover}
+                  />
+                ) : (
+                  <View style={styles.playlistGridCovers}>
+                    {previewCovers.length > 0 ? (
+                      previewCovers.map((media, index) => (
+                        <Image
+                          key={media.id ?? index}
+                          source={{
+                            uri: media.coverUrl ? media.coverUrl : defaultCover,
+                          }}
+                          style={styles.gridImageSquare}
+                        />
+                      ))
+                    ) : (
+                      <View
+                        style={[
+                          styles.gridImageSquare,
+                          {
+                            width: "100%",
+                            height: "100%",
+                            backgroundColor: "#2C353F",
+                            justifyContent: "center",
+                            alignItems: "center",
+                          },
+                        ]}
+                      >
+                        <Ionicons
+                          name="disc-outline"
+                          size={24}
+                          color="#8A8A8F"
+                        />
+                      </View>
+                    )}
+                  </View>
+                )}
 
                 {/* Informações da Tracklist Simplificada */}
                 <View style={styles.playlistTracksPreview}>
@@ -474,6 +485,12 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontWeight: "700",
     fontSize: 13,
+  },
+  playlistSingleCover: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    backgroundColor: "#12161A",
   },
 
   interactionsContainer: { flexDirection: "row", alignItems: "center" },

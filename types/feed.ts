@@ -25,6 +25,7 @@ export interface FeedItem {
   media: Media | null;
   authorFollowedByAuthUser: boolean;
   mediaList?: MediaMin[];
+  coverImageUrl: string | null;
 }
 
 export type MediaMin = {

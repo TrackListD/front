@@ -276,7 +276,7 @@ export default function MediaListDetailScreen() {
       pathname: "/reportModal",
       params: {
         commentId: publicData.id,
-        userTargetId: publicData.idAuthor,
+        userTargetId: publicData.authorId,
       },
     });
   };
@@ -296,19 +296,65 @@ export default function MediaListDetailScreen() {
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Capa da Lista */}
-        {/* DEBITO TECNICO: Backend não retorna capa da lista. Usando placeholder. */}
-        <View
-          style={[
-            styles.coverContainer,
-            { backgroundColor: isDark ? "#2A2D31" : "#E2E8F0" },
-          ]}
-        >
-          <MaterialIcons
-            name={publicData.typeOfList === "ALBUM" ? "album" : "library-music"}
-            size={64}
-            color={themeStyles.subText}
-          />
-        </View>
+        {/* Se a lista tiver coverImageUrl, mostramos a capa real.
+    Caso contrário, caímos no mesmo grid de até 4 capas usado no
+    PostCard do feed (playlistGridCovers), com fallback de ícone
+    quando não há nenhuma mídia. */}
+        {publicData.coverImageUrl ? (
+          <View
+            style={[
+              styles.coverContainer,
+              { backgroundColor: isDark ? "#2A2D31" : "#E2E8F0" },
+            ]}
+          >
+            <Image
+              source={{ uri: publicData.coverImageUrl }}
+              style={styles.coverImage}
+              resizeMode="cover"
+            />
+          </View>
+        ) : publicData.medias && publicData.medias.length > 0 ? (
+          <View
+            style={[
+              styles.coverContainer,
+              styles.coverGrid,
+              { backgroundColor: isDark ? "#12161A" : "#E2E8F0" },
+            ]}
+          >
+            {Array.from(publicData.medias)
+              .slice(0, 4)
+              .map((media, index) => (
+                <Image
+                  key={media.id ?? index}
+                  source={{
+                    uri: media.coverUrl
+                      ? media.coverUrl
+                      : "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300",
+                  }}
+                  style={[
+                    styles.coverGridImage,
+                    index % 2 === 0 && styles.coverGridImageLeft,
+                    index < 2 && styles.coverGridImageTop,
+                  ]}
+                />
+              ))}
+          </View>
+        ) : (
+          <View
+            style={[
+              styles.coverContainer,
+              { backgroundColor: isDark ? "#2A2D31" : "#E2E8F0" },
+            ]}
+          >
+            <MaterialIcons
+              name={
+                publicData.typeOfList === "ALBUM" ? "album" : "library-music"
+              }
+              size={64}
+              color={themeStyles.subText}
+            />
+          </View>
+        )}
 
         {/* Título e Autor da Lista */}
         <View style={styles.metaContainer}>
@@ -347,7 +393,7 @@ export default function MediaListDetailScreen() {
               color={themeStyles.subText}
             />
             <Text style={[styles.authorName, { color: themeStyles.textColor }]}>
-              {publicData.authorName || `Usuário #${publicData.idAuthor}`}
+              {publicData.authorName || `Usuário #${publicData.authorId}`}
             </Text>
           </View>
 
@@ -413,18 +459,22 @@ export default function MediaListDetailScreen() {
               </Text>
             )}
 
-            {/* Favoritar a lista (bookmark) — separado do like de publication */}
-            <Pressable
-              onPress={handleToggleFavorite}
-              style={styles.actionButton}
-              hitSlop={8}
-            >
-              <MaterialIcons
-                name={publicData.isFavorite ? "bookmark" : "bookmark-border"}
-                size={28}
-                color={publicData.isFavorite ? "#F59E0B" : themeStyles.subText}
-              />
-            </Pressable>
+            {/* Favoritar a lista (bookmark) — só o dono pode favoritar a própria lista */}
+            {isOwner && (
+              <Pressable
+                onPress={handleToggleFavorite}
+                style={styles.actionButton}
+                hitSlop={8}
+              >
+                <MaterialIcons
+                  name={publicData.isFavorite ? "bookmark" : "bookmark-border"}
+                  size={28}
+                  color={
+                    publicData.isFavorite ? "#F59E0B" : themeStyles.subText
+                  }
+                />
+              </Pressable>
+            )}
 
             {/* DEBITO TECNICO: Sem funcionalidade de compartilhamento no backend. */}
             <Pressable
@@ -1098,5 +1148,30 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 10,
     alignItems: "center",
+  },
+  coverImage: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 16,
+  },
+  coverGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "flex-start",
+    alignItems: "flex-start",
+    overflow: "hidden",
+    padding: 2,
+  },
+  coverGridImage: {
+    width: 77,
+    height: 77,
+    borderRadius: 2,
+    marginBottom: 2,
+  },
+  coverGridImageLeft: {
+    marginRight: 2,
+  },
+  coverGridImageTop: {
+    marginBottom: 2,
   },
 });

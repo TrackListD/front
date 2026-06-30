@@ -7,11 +7,7 @@ import EditReviewModal from "@/src/components/EditReviewModal";
 import { StarRating } from "@/src/components/StarRating";
 import apiClient, { NormalizedError } from "@/src/service/api";
 import { toggleLike } from "@/src/service/feedApi";
-import {
-  RatingDetailResponse,
-  RatingResponseDto,
-  isOwnerResponse,
-} from "@/src/types/rating";
+import { RatingDetailResponse, RatingResponseDto } from "@/src/types/rating";
 import { formatDateBR } from "@/src/utils/dateUtils";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { Href, Stack, router, useLocalSearchParams } from "expo-router";
@@ -203,7 +199,7 @@ export default function RatingDetailScreen() {
   }
 
   // 3. Normalizing access (discrimination helper)
-  const isOwner = isOwnerResponse(rating);
+  const isOwner = !!rating && ("publicData" in rating || "publicDto" in rating);
 
   // Alvo correto: Se existir "publicData" ou "publicDto" dentro do objeto retornado, usamos ele!
   const publicData: RatingResponseDto = rating

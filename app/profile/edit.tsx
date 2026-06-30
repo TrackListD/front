@@ -1,21 +1,23 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { getAuth, signOut } from "firebase/auth";
 import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import {
-    deleteMyAccount,
-    getMyProfile,
-    updateMyProfile,
+  deleteMyAccount,
+  getMyProfile,
+  updateMyProfile,
 } from "../../src/service/userApi";
 
 const COLORS = {
@@ -35,6 +37,8 @@ export default function EditProfileScreen() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   // Estados dos campos controlados
   const [name, setName] = useState("");
@@ -72,7 +76,6 @@ export default function EditProfileScreen() {
       await updateMyProfile({
         name,
         bio,
-        profilePic: profilePic.trim() === "" ? null : profilePic,
       });
       Alert.alert("Sucesso", "Perfil atualizado com sucesso!", [
         { text: "OK", onPress: () => router.back() },
@@ -84,27 +87,19 @@ export default function EditProfileScreen() {
     }
   }
 
-  async function handleDeleteAccount() {
-    Alert.alert(
-      "Excluir Conta",
-      "Tem certeza absoluta? Essa ação é permanente e apagará todos os seus dados.",
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Excluir",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await deleteMyAccount();
-              // Redireciona para login ou tela inicial após deletar
-              router.replace("/login");
-            } catch (err) {
-              Alert.alert("Erro", "Não foi possível excluir sua conta.");
-            }
-          },
-        },
-      ],
-    );
+  async function handleConfirmDelete() {
+    setDeleting(true);
+    try {
+      await deleteMyAccount();
+      await signOut(getAuth());
+      setShowDeleteModal(false);
+      router.replace("/login");
+    } catch (err) {
+      setShowDeleteModal(false);
+      Alert.alert("Erro", "Não foi possível excluir sua conta.");
+    } finally {
+      setDeleting(false);
+    }
   }
 
   if (loading) {
@@ -134,9 +129,6 @@ export default function EditProfileScreen() {
           source={profilePic ? { uri: profilePic } : genericProfilePic}
           style={styles.avatar}
         />
-        <Text style={styles.avatarLabel}>
-          Preencha com a URL da nova imagem
-        </Text>
       </View>
 
       <View style={styles.formContainer}>
@@ -147,17 +139,6 @@ export default function EditProfileScreen() {
           onChangeText={setName}
           placeholder="Seu nome"
           placeholderTextColor="#555"
-        />
-
-        <Text style={styles.inputLabel}>URL da foto de perfil</Text>
-        <TextInput
-          style={styles.input}
-          value={profilePic}
-          onChangeText={setProfilePic}
-          placeholder="https://linkdaimagem.com/foto.jpg"
-          placeholderTextColor="#555"
-          autoCapitalize="none"
-          keyboardType="url"
         />
 
         <Text style={styles.inputLabel}>Bio</Text>
@@ -173,11 +154,50 @@ export default function EditProfileScreen() {
 
         <TouchableOpacity
           style={styles.deleteButton}
-          onPress={handleDeleteAccount}
+          onPress={() => setShowDeleteModal(true)}
         >
           <Text style={styles.deleteButtonText}>Excluir minha conta</Text>
         </TouchableOpacity>
       </View>
+
+      <Modal
+        visible={showDeleteModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => !deleting && setShowDeleteModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Excluir Conta</Text>
+            <Text style={styles.modalMessage}>
+              Tem certeza absoluta? Essa ação é permanente e apagará todos os
+              seus dados.
+            </Text>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalCancelButton]}
+                onPress={() => setShowDeleteModal(false)}
+                disabled={deleting}
+              >
+                <Text style={styles.modalCancelText}>Cancelar</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalConfirmButton]}
+                onPress={handleConfirmDelete}
+                disabled={deleting}
+              >
+                {deleting ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.modalConfirmText}>Excluir</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -216,11 +236,6 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: "#2c2c2e",
   },
-  avatarLabel: {
-    color: COLORS.textSubtle,
-    fontSize: 12,
-    marginTop: 8,
-  },
   formContainer: {
     paddingHorizontal: 16,
     marginTop: 24,
@@ -251,6 +266,60 @@ const styles = StyleSheet.create({
   },
   deleteButtonText: {
     color: COLORS.danger,
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+  },
+  modalCard: {
+    width: "100%",
+    maxWidth: 340,
+    backgroundColor: COLORS.bgSubtle,
+    borderRadius: 14,
+    padding: 20,
+  },
+  modalTitle: {
+    color: COLORS.text,
+    fontSize: 17,
+    fontWeight: "700",
+    marginBottom: 8,
+  },
+  modalMessage: {
+    color: COLORS.textSubtle,
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 20,
+  },
+  modalActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 12,
+  },
+  modalButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    minWidth: 80,
+    alignItems: "center",
+  },
+  modalCancelButton: {
+    backgroundColor: "transparent",
+  },
+  modalCancelText: {
+    color: COLORS.textSubtle,
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  modalConfirmButton: {
+    backgroundColor: COLORS.danger,
+  },
+  modalConfirmText: {
+    color: "#fff",
     fontSize: 14,
     fontWeight: "600",
   },

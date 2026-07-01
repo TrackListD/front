@@ -16,7 +16,7 @@ type PostCardProps = {
   currentUserId?: number;
   onToggleLike: (postId: number) => void;
   onFollow: (authorId: number) => void;
-  onReport: (postId: number, authorId: number) => void;
+  onReport: (postId: number, authorId: number, postType: string) => void;
 };
 
 const defaultCover =
@@ -330,7 +330,7 @@ export default function PostCard({
 
         <TouchableOpacity
           style={[styles.actionButton, { marginLeft: "auto", marginRight: 0 }]}
-          onPress={() => onReport(item.id, item.author.id)}
+          onPress={() => onReport(item.id, item.author.id, item.type)}
         >
           <Ionicons name="flag-outline" size={18} color="#8A8A8F" />
         </TouchableOpacity>

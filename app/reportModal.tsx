@@ -15,8 +15,10 @@ import { getMyProfile } from "../src/service/userApi";
 export default function ReportModalScreen() {
   const router = useRouter();
 
-  const { commentId, userTargetId, reason } = useLocalSearchParams<{
+  const { commentId, ratingId, mediaListId, userTargetId, reason } = useLocalSearchParams<{
     commentId?: string;
+    ratingId?: string;
+    mediaListId?: string;
     userTargetId?: string;
     reason?: string;
   }>();
@@ -44,6 +46,8 @@ export default function ReportModalScreen() {
         informerId: me.id,
         userTargetId: userTargetId ? Number(userTargetId) : null,
         commentTargetId: commentId ? Number(commentId) : null,
+        ratingTargetId: ratingId ? Number(ratingId) : null,
+        mediaListTargetId: mediaListId ? Number(mediaListId) : null,
         reportReason: description,
       };
 

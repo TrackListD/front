@@ -15,7 +15,9 @@ import { Href, Stack, router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Image,
+  Platform,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -126,6 +128,58 @@ export default function RatingDetailScreen() {
       default:
         return { label: privacy, icon: "visibility" };
     }
+  };
+
+  const handleDeleteRating = async () => {
+    const executarDelecao = async () => {
+      try {
+        await apiClient.delete(`/ratings/${id}`);
+
+        if (router.canGoBack()) {
+          router.back();
+        } else {
+          router.replace("/feed/global");
+        }
+      } catch (err) {
+        const normalized = err as NormalizedError;
+
+        if (Platform.OS === "web") {
+          window.alert(
+            normalized.message || "Não foi possível excluir a avaliação.",
+          );
+        } else {
+          Alert.alert(
+            "Erro",
+            normalized.message || "Não foi possível excluir a avaliação.",
+          );
+        }
+      }
+    };
+
+    if (Platform.OS === "web") {
+      const confirmar = window.confirm(
+        "Tem certeza que deseja excluir esta avaliação? Essa ação não poderá ser desfeita.",
+      );
+
+      if (confirmar) {
+        await executarDelecao();
+      }
+
+      return;
+    }
+
+    Alert.alert(
+      "Excluir avaliação",
+      "Tem certeza que deseja excluir esta avaliação? Essa ação não poderá ser desfeita.",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Excluir",
+          style: "destructive",
+          onPress: executarDelecao,
+        },
+      ],
+    );
   };
 
   // Toggle de curtida (publication like) usando atualização otimista
@@ -428,15 +482,13 @@ export default function RatingDetailScreen() {
           </View>
 
           {/* Review text */}
-          <View style={styles.sectionContainer}>
-            <View style={styles.rowJustify}>
-              <Text
-                style={[styles.sectionLabel, { color: themeStyles.subText }]}
-              >
-                Resenha
-              </Text>
+          <View style={styles.rowJustify}>
+            <Text style={[styles.sectionLabel, { color: themeStyles.subText }]}>
+              Resenha
+            </Text>
 
-              {isOwner && (
+            {isOwner && (
+              <View style={styles.actionButtons}>
                 <Pressable
                   style={({ pressed }) => [
                     styles.editIcon,
@@ -450,25 +502,23 @@ export default function RatingDetailScreen() {
                     color={themeStyles.tintColor}
                   />
                 </Pressable>
-              )}
-            </View>
-            <View
-              style={[
-                styles.reviewContainer,
-                {
-                  backgroundColor: isDark ? "#151719" : "#F8F9FA",
-                  borderColor: themeStyles.border,
-                },
-              ]}
-            >
-              <Text
-                style={[styles.reviewText, { color: themeStyles.textColor }]}
-              >
-                {publicData.review || "Sem opinião escrita para esta mídia."}
-              </Text>
-            </View>
-          </View>
 
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.editIcon,
+                    pressed && styles.pressed,
+                  ]}
+                  onPress={handleDeleteRating}
+                >
+                  <MaterialIcons
+                    name="delete-outline"
+                    size={18}
+                    color="#EF4444"
+                  />
+                </Pressable>
+              </View>
+            )}
+          </View>
           {/* If Owner: Privacy Info block */}
           {isOwner && (
             <View style={styles.sectionContainer}>
@@ -864,5 +914,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: "center",
     lineHeight: 20,
+  },
+  actionButtons: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
 });

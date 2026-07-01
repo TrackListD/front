@@ -160,7 +160,7 @@ export default function MediaListDetailScreen() {
     setLoading(true);
     try {
       await apiClient.delete(`/mediaList/${id}`);
-      router.replace("/media-lists/user/me" as Href);
+      router.replace("/profile/me" as Href);
     } catch (err) {
       const normalized = err as NormalizedError;
       Alert.alert(

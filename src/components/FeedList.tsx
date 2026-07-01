@@ -1,4 +1,5 @@
 import PostCard from "@/components/PostCard";
+import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import { onAuthStateChanged } from "firebase/auth";
 import React, { useCallback, useEffect, useState } from "react";
@@ -85,11 +86,15 @@ export default function FeedList({
     return unsubscribe;
   }, []);
 
-  useEffect(() => {
-    if (!authLoaded) return;
+  useFocusEffect(
+    useCallback(() => {
+      if (!authLoaded) return;
 
-    fetchFeed();
-  }, [authLoaded, fetchFeed]);
+      fetchFeed();
+
+      return () => {};
+    }, [authLoaded, fetchFeed]),
+  );
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -193,13 +198,13 @@ export default function FeedList({
   );
 
   const handleReport = useCallback(
-  (postId: number, authorId: number) => {
+    (postId: number, authorId: number) => {
       router.push({
         pathname: "/reportModal",
-        params: { 
-          commentId: postId, 
-          userTargetId: authorId 
-        }
+        params: {
+          commentId: postId,
+          userTargetId: authorId,
+        },
       });
     },
     [router],

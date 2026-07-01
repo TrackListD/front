@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import React from "react";
 import {
   Dimensions,
+  Image,
   SafeAreaView,
   StatusBar,
   StyleSheet,
@@ -13,90 +14,103 @@ import {
 
 const { width } = Dimensions.get("window");
 
+// Capa de exemplo — troque pela URL/require da capa real depois.
+const PREVIEW_COVER = {
+  uri: "https://upload.wikimedia.org/wikipedia/pt/b/bf/A_Night_at_the_Opera_Queen.jpg",
+};
+
 export default function Home() {
   const router = useRouter();
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0B0E11" />
+    // View externa garante que a tela inteira fique escura,
+    // mesmo se o conteúdo não preencher 100% da altura em algum aparelho.
+    <View style={styles.root}>
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor="#0B0E11" />
 
-      {/* Glow decorativo de fundo */}
-      <View style={styles.glowTop} />
-      <View style={styles.glowBottom} />
+        {/* Glow decorativo de fundo */}
+        <View style={styles.glowTop} />
+        <View style={styles.glowBottom} />
 
-      <View style={styles.content}>
-        {/* Logo / marca */}
-        <View style={styles.brandRow}>
-          <Ionicons name="disc-outline" size={28} color="#34D399" />
-          <Text style={styles.brandText}>
-            TrackList<Text style={styles.brandAccent}>D</Text>
-          </Text>
-        </View>
-
-        {/* Bloco central */}
-        <View style={styles.hero}>
-          <View style={styles.starsRow}>
-            {[...Array(5)].map((_, i) => (
-              <Ionicons
-                key={i}
-                name="star"
-                size={18}
-                color="#F5B544"
-                style={{ marginHorizontal: 2 }}
-              />
-            ))}
+        <View style={styles.content}>
+          {/* Logo / marca */}
+          <View style={styles.brandRow}>
+            <Ionicons name="disc-outline" size={28} color="#34D399" />
+            <Text style={styles.brandText}>
+              TrackList<Text style={styles.brandAccent}>D</Text>
+            </Text>
           </View>
 
-          <Text style={styles.title}>
-            Avalie. Compartilhe.{"\n"}
-            <Text style={styles.titleAccent}>Descubra música.</Text>
-          </Text>
-
-          <Text style={styles.subtitle}>
-            O lugar onde suas faixas favoritas ganham nota, opinião e uma
-            comunidade que entende de música tanto quanto você.
-          </Text>
-        </View>
-
-        <View style={styles.previewCard}>
-          <View style={styles.previewCover} />
-          <View style={styles.previewInfo}>
-            <Text style={styles.previewTrack}>Bohemian Rhapsody</Text>
-            <Text style={styles.previewArtist}>Queen</Text>
-            <View style={styles.previewStars}>
+          {/* Bloco central */}
+          <View style={styles.hero}>
+            <View style={styles.starsRow}>
               {[...Array(5)].map((_, i) => (
-                <Ionicons key={i} name="star" size={12} color="#F5B544" />
+                <Ionicons
+                  key={i}
+                  name="star"
+                  size={18}
+                  color="#F5B544"
+                  style={{ marginHorizontal: 2 }}
+                />
               ))}
             </View>
+
+            <Text style={styles.title}>
+              Avalie. Compartilhe.{"\n"}
+              <Text style={styles.titleAccent}>Descubra música.</Text>
+            </Text>
+
+            <Text style={styles.subtitle}>
+              O lugar onde suas faixas favoritas ganham nota, opinião e uma
+              comunidade que entende de música tanto quanto você.
+            </Text>
+          </View>
+
+          <View style={styles.previewCard}>
+            <Image source={PREVIEW_COVER} style={styles.previewCover} />
+            <View style={styles.previewInfo}>
+              <Text style={styles.previewTrack}>Bohemian Rhapsody</Text>
+              <Text style={styles.previewArtist}>Queen</Text>
+              <View style={styles.previewStars}>
+                {[...Array(5)].map((_, i) => (
+                  <Ionicons key={i} name="star" size={12} color="#F5B544" />
+                ))}
+              </View>
+            </View>
+          </View>
+
+          {/* CTA */}
+          <View style={styles.ctaWrapper}>
+            <TouchableOpacity
+              style={styles.ctaButton}
+              activeOpacity={0.85}
+              onPress={() => router.push("/login")}
+            >
+              <Text style={styles.ctaText}>Aprofunde na música</Text>
+              <Ionicons
+                name="arrow-forward"
+                size={18}
+                color="#0B0E11"
+                style={{ marginLeft: 8 }}
+              />
+            </TouchableOpacity>
+
+            <Text style={styles.ctaFootnote}>
+              Entre com sua conta Google para começar
+            </Text>
           </View>
         </View>
-
-        {/* CTA */}
-        <View style={styles.ctaWrapper}>
-          <TouchableOpacity
-            style={styles.ctaButton}
-            activeOpacity={0.85}
-            onPress={() => router.push("/login")}
-          >
-            <Text style={styles.ctaText}>Aprofunde na música</Text>
-            <Ionicons
-              name="arrow-forward"
-              size={18}
-              color="#0B0E11"
-              style={{ marginLeft: 8 }}
-            />
-          </TouchableOpacity>
-
-          <Text style={styles.ctaFootnote}>
-            Entre com sua conta Google para começar
-          </Text>
-        </View>
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: "#0B0E11",
+  },
   container: {
     flex: 1,
     backgroundColor: "#0B0E11",

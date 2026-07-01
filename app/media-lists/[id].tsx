@@ -482,23 +482,6 @@ export default function MediaListDetailScreen() {
               </Pressable>
             )}
 
-            {/* DEBITO TECNICO: Sem funcionalidade de compartilhamento no backend. */}
-            <Pressable
-              onPress={() =>
-                Alert.alert(
-                  "Compartilhar",
-                  "Sem funcionalidade de compartilhamento no backend.",
-                )
-              }
-              style={styles.actionButton}
-            >
-              <MaterialIcons
-                name="share"
-                size={24}
-                color={themeStyles.subText}
-              />
-            </Pressable>
-
             {/* Denunciar lista */}
             <Pressable
               onPress={handleReport}

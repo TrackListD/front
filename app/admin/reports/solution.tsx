@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState, useEffect } from 'react';
-import { ActivityIndicator, Alert, ScrollView, View, TextInput } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, View, TextInput, Text } from 'react-native';
 import { authFetch } from '../../../src/service/api';
 import { Container, Header, Title, Subtitle, ReportCard, ReportHeader, ReportTitle, ReportDate, ReportDescription, SectionTitle, ActionButton, ActionText, CancelButton } from './styles';
 
@@ -79,10 +79,17 @@ export default function ReportSolutionScreen() {
         <SectionTitle>Detalhes da Ocorrência</SectionTitle>
         <ReportCard style={{ marginBottom: 32 }} disabled={true}>
           <ReportHeader>
-            <ReportTitle>{report?.title}</ReportTitle>
+            <View>
+              <Text style={{ color: '#00E5FF', fontWeight: 'bold', fontSize: 12, marginBottom: 4, textTransform: 'uppercase' }}>O que foi denunciado:</Text>
+              <ReportTitle>{report?.title}</ReportTitle>
+            </View>
             <ReportDate>{report?.date}</ReportDate>
           </ReportHeader>
-          <ReportDescription>{report?.description}</ReportDescription>
+
+          <View style={{ marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: '#2A2F3A' }}>
+            <Text style={{ color: '#FFB020', fontWeight: 'bold', fontSize: 12, marginBottom: 4, textTransform: 'uppercase' }}>Justificativa do Denunciante:</Text>
+            <ReportDescription>{report?.description}</ReportDescription>
+          </View>
         </ReportCard>
 
         <SectionTitle>Decisão do Administrador</SectionTitle>

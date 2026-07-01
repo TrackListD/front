@@ -1,0 +1,37 @@
+export interface Author {
+  id: number;
+  name: string | null;
+  profilePic: string | null;
+}
+
+export interface Media {
+  id: string;
+  title: string;
+  artist: string;
+  type: string;
+  coverUrl: string | null;
+}
+
+export interface FeedItem {
+  id: number;
+  content: string;
+  type: "RATING" | "MEDIA_LIST" | string;
+  rating: number | null;
+  publicationDate: string;
+  author: Author;
+  likesCount: number;
+  likedByMe: boolean;
+  commentsCount: number;
+  media: Media | null;
+  authorFollowedByAuthUser: boolean;
+  mediaList?: MediaMin[];
+  coverImageUrl: string | null;
+}
+
+export type MediaMin = {
+  id: string;
+  title: string;
+  artist: string;
+  type: "album" | "music" | "unknown";
+  coverUrl: string | null;
+};

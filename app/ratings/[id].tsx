@@ -1,5 +1,6 @@
 // Tela: Detalhe de Avaliação — exibe os dados completos de uma avaliação, com variação para dono e público.
 
+import { BackButton } from "@/components/BackButton";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import EditNoteModal from "@/src/components/EditNoteModal";
 import EditPrivacyModal from "@/src/components/EditPrivacyModal";
@@ -157,7 +158,8 @@ export default function RatingDetailScreen() {
       <SafeAreaView
         style={[styles.safeArea, { backgroundColor: themeStyles.background }]}
       >
-        <Stack.Screen options={{ title: "Carregando..." }} />
+        <Stack.Screen options={{ headerShown: false }} />
+        <BackButton color={themeStyles.textColor} />
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={themeStyles.tintColor} />
         </View>
@@ -177,7 +179,8 @@ export default function RatingDetailScreen() {
       <SafeAreaView
         style={[styles.safeArea, { backgroundColor: themeStyles.background }]}
       >
-        <Stack.Screen options={{ title: "Erro" }} />
+        <Stack.Screen options={{ headerShown: false }} />
+        <BackButton color={themeStyles.textColor} />
         <View style={styles.centerContainer}>
           <View
             style={[
@@ -217,7 +220,8 @@ export default function RatingDetailScreen() {
       <SafeAreaView
         style={[styles.safeArea, { backgroundColor: themeStyles.background }]}
       >
-        <Stack.Screen options={{ title: "Carregando Mídia..." }} />
+        <Stack.Screen options={{ headerShown: false }} />
+        <BackButton color={themeStyles.textColor} />
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={themeStyles.tintColor} />
         </View>
@@ -239,18 +243,11 @@ export default function RatingDetailScreen() {
     <SafeAreaView
       style={[styles.safeArea, { backgroundColor: themeStyles.background }]}
     >
-      <Stack.Screen
-        options={{
-          title: "Detalhe da Avaliação",
-          headerStyle: {
-            backgroundColor: themeStyles.cardBackground,
-          },
-          headerTintColor: themeStyles.textColor,
-          headerShadowVisible: false,
-        }}
-      />
+      <Stack.Screen options={{ headerShown: false }} />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
+        <BackButton color={themeStyles.textColor} />
+
         {/* Main Details Card */}
         <View
           style={[styles.card, { backgroundColor: themeStyles.cardBackground }]}

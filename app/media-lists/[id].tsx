@@ -1,4 +1,5 @@
 // Tela: Detalhe da Lista de Mídias — exibe a lista condicionalmente (Visão do Dono vs Visão Pública) via GET /mediaList/{id}
+import { BackButton } from "@/components/BackButton";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import AddMediaModal from "@/src/components/AddMediaModal";
 import EditMediaListNameModal from "@/src/components/EditMediaListNameModal";
@@ -292,6 +293,12 @@ export default function MediaListDetailScreen() {
           headerTintColor: themeStyles.textColor,
           headerShadowVisible: false,
         }}
+      />
+
+      <BackButton
+        color={themeStyles.textColor}
+        fallbackHref="/feed/global"
+        style={{ marginTop: 12, marginLeft: 16 }}
       />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>

@@ -11,7 +11,6 @@ import {
   View,
 } from "react-native";
 import { auth } from "../src/service/firebase";
-import { getMyProfile } from "../src/service/userApi";
 
 const logoImg = require("../assets/images/logo.png");
 

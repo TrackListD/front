@@ -1,5 +1,4 @@
 // Adicione o useRouter aqui
-import { Ionicons } from "@expo/vector-icons";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -108,7 +107,7 @@ export default function ArtistScreen() {
         />
         <Text style={styles.artistName}>{artist.artist.name}</Text>
 
-        <TouchableOpacity
+        {/*         <TouchableOpacity
           style={[
             styles.favoriteButton,
             isFavorite ? styles.favoriteButtonActive : null,
@@ -123,7 +122,7 @@ export default function ArtistScreen() {
           <Text style={styles.favoriteButtonText}>
             {isFavorite ? "Favoritado" : "Favoritar"}
           </Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
 
       <View style={styles.albumsSection}>

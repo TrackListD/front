@@ -198,16 +198,24 @@ export default function FeedList({
   );
 
   const handleReport = useCallback(
-    (postId: number, authorId: number) => {
+    (postId: number, authorId: number, postType: string) => {
+      const params: any = {};
+      if (postType === "RATING") {
+        params.ratingId = postId;
+      } else if (postType === "COMMENT") {
+        params.commentId = postId;
+      } else if (postType === "MEDIA_LIST") {
+        params.mediaListId = postId;
+      } else {
+        params.userTargetId = authorId;
+      }
+
       router.push({
         pathname: "/reportModal",
-        params: {
-          commentId: postId,
-          userTargetId: authorId,
-        },
+        params
       });
     },
-    [router],
+    [router]
   );
 
   if (loading) {

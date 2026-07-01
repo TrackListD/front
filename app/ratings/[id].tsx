@@ -287,8 +287,7 @@ export default function RatingDetailScreen() {
     router.push({
       pathname: "/reportModal",
       params: {
-        commentId: publicData.id,
-        userTargetId: publicData.author.id,
+        ratingId: publicData.id,
       },
     });
   };

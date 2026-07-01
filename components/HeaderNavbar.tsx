@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Href, useRouter } from "expo-router";
+import { getMyProfile } from "../src/service/userApi";
 import React, { useEffect, useState } from "react";
 import {
   Image,
@@ -10,7 +11,6 @@ import {
   View,
 } from "react-native";
 import { auth } from "../src/service/firebase";
-import { getMyProfile } from "../src/service/userApi";
 
 const logoImg = require("../assets/images/logo.png");
 
@@ -23,21 +23,34 @@ export default function HeaderNavbar() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userPhoto, setUserPhoto] = useState<string | null>(null);
   const [menuVisible, setMenuVisible] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      // 1. Se não tiver usuário logado (Implementação do outro dev + nossa)
       if (!user) {
         setIsLoggedIn(false);
         setUserPhoto(null);
-        return;
+        setIsAdmin(false);
+        return; // Para a execução por aqui
       }
 
+      // 2. Se tiver usuário logado
       setIsLoggedIn(true);
       try {
+        // Faz a chamada na API UMA única vez
         const profile = await getMyProfile();
+
+        // Código do outro dev: pega a foto vinda do backend
         setUserPhoto(profile.profilePic || null);
+
+        // O NOSSO código: valida a role do perfil
+        setIsAdmin(profile.role === "ADMIN");
+
       } catch (err) {
+        console.error("Erro ao buscar perfil no Header:", err);
         setUserPhoto(null);
+        setIsAdmin(false);
       }
     });
 
@@ -159,6 +172,22 @@ export default function HeaderNavbar() {
               <Ionicons name="help-circle-outline" size={20} color="#FFFFFF" />
               <Text style={styles.menuText}>FAQ / Ajuda</Text>
             </TouchableOpacity>
+
+            {isAdmin && (
+              <>
+                <View style={styles.separator} />
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => {
+                    setMenuVisible(false);
+                    router.push("/admin/reports/pending" as Href);
+                  }}
+                >
+                  <Ionicons name="shield-checkmark-outline" size={20} color="#1DB954" />
+                  <Text style={styles.menuText}>Painel Admin</Text>
+                </TouchableOpacity>
+              </>
+            )}
 
             <View style={styles.separator} />
 

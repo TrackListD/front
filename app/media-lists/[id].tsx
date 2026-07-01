@@ -276,8 +276,7 @@ export default function MediaListDetailScreen() {
     router.push({
       pathname: "/reportModal",
       params: {
-        commentId: publicData.id,
-        userTargetId: publicData.authorId,
+        mediaListId: publicData.id,
       },
     });
   };

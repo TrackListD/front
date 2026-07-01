@@ -113,9 +113,10 @@ export default function CreateRatingScreen() {
     setSubmitting(true);
 
     try {
-      await apiClient.post("/ratings", dto);
+      const response = await apiClient.post<{ id: number }>("/ratings", dto);
+      const newRatingId = response.data.id;
 
-      // Success: Show beautiful confirmation and navigate back
+      // Success: Show beautiful confirmation and navigate to the new rating
       if (isMountedRef.current) {
         setShowSuccessToast(true);
       }
@@ -124,7 +125,7 @@ export default function CreateRatingScreen() {
         if (isMountedRef.current) {
           setShowSuccessToast(false);
         }
-        router.back();
+        router.replace(`/ratings/${newRatingId}`);
       }, 1500);
     } catch (err) {
       // Capture normalized error

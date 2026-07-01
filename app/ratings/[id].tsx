@@ -1,5 +1,6 @@
 // Tela: Detalhe de Avaliação — exibe os dados completos de uma avaliação, com variação para dono e público.
 
+import { BackButton } from "@/components/BackButton";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import EditNoteModal from "@/src/components/EditNoteModal";
 import EditPrivacyModal from "@/src/components/EditPrivacyModal";
@@ -14,7 +15,9 @@ import { Href, Stack, router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Image,
+  Platform,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -127,6 +130,58 @@ export default function RatingDetailScreen() {
     }
   };
 
+  const handleDeleteRating = async () => {
+    const executarDelecao = async () => {
+      try {
+        await apiClient.delete(`/ratings/${id}`);
+
+        if (router.canGoBack()) {
+          router.back();
+        } else {
+          router.replace("/feed/global");
+        }
+      } catch (err) {
+        const normalized = err as NormalizedError;
+
+        if (Platform.OS === "web") {
+          window.alert(
+            normalized.message || "Não foi possível excluir a avaliação.",
+          );
+        } else {
+          Alert.alert(
+            "Erro",
+            normalized.message || "Não foi possível excluir a avaliação.",
+          );
+        }
+      }
+    };
+
+    if (Platform.OS === "web") {
+      const confirmar = window.confirm(
+        "Tem certeza que deseja excluir esta avaliação? Essa ação não poderá ser desfeita.",
+      );
+
+      if (confirmar) {
+        await executarDelecao();
+      }
+
+      return;
+    }
+
+    Alert.alert(
+      "Excluir avaliação",
+      "Tem certeza que deseja excluir esta avaliação? Essa ação não poderá ser desfeita.",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Excluir",
+          style: "destructive",
+          onPress: executarDelecao,
+        },
+      ],
+    );
+  };
+
   // Toggle de curtida (publication like) usando atualização otimista
   const handleToggleLike = async () => {
     if (!id) return;
@@ -157,7 +212,8 @@ export default function RatingDetailScreen() {
       <SafeAreaView
         style={[styles.safeArea, { backgroundColor: themeStyles.background }]}
       >
-        <Stack.Screen options={{ title: "Carregando..." }} />
+        <Stack.Screen options={{ headerShown: false }} />
+        <BackButton color={themeStyles.textColor} />
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={themeStyles.tintColor} />
         </View>
@@ -177,7 +233,8 @@ export default function RatingDetailScreen() {
       <SafeAreaView
         style={[styles.safeArea, { backgroundColor: themeStyles.background }]}
       >
-        <Stack.Screen options={{ title: "Erro" }} />
+        <Stack.Screen options={{ headerShown: false }} />
+        <BackButton color={themeStyles.textColor} />
         <View style={styles.centerContainer}>
           <View
             style={[
@@ -217,7 +274,8 @@ export default function RatingDetailScreen() {
       <SafeAreaView
         style={[styles.safeArea, { backgroundColor: themeStyles.background }]}
       >
-        <Stack.Screen options={{ title: "Carregando Mídia..." }} />
+        <Stack.Screen options={{ headerShown: false }} />
+        <BackButton color={themeStyles.textColor} />
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={themeStyles.tintColor} />
         </View>
@@ -238,18 +296,11 @@ export default function RatingDetailScreen() {
     <SafeAreaView
       style={[styles.safeArea, { backgroundColor: themeStyles.background }]}
     >
-      <Stack.Screen
-        options={{
-          title: "Detalhe da Avaliação",
-          headerStyle: {
-            backgroundColor: themeStyles.cardBackground,
-          },
-          headerTintColor: themeStyles.textColor,
-          headerShadowVisible: false,
-        }}
-      />
+      <Stack.Screen options={{ headerShown: false }} />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
+        <BackButton color={themeStyles.textColor} />
+
         {/* Main Details Card */}
         <View
           style={[styles.card, { backgroundColor: themeStyles.cardBackground }]}
@@ -430,15 +481,13 @@ export default function RatingDetailScreen() {
           </View>
 
           {/* Review text */}
-          <View style={styles.sectionContainer}>
-            <View style={styles.rowJustify}>
-              <Text
-                style={[styles.sectionLabel, { color: themeStyles.subText }]}
-              >
-                Resenha
-              </Text>
+          <View style={styles.rowJustify}>
+            <Text style={[styles.sectionLabel, { color: themeStyles.subText }]}>
+              Resenha
+            </Text>
 
-              {isOwner && (
+            {isOwner && (
+              <View style={styles.actionButtons}>
                 <Pressable
                   style={({ pressed }) => [
                     styles.editIcon,
@@ -452,25 +501,23 @@ export default function RatingDetailScreen() {
                     color={themeStyles.tintColor}
                   />
                 </Pressable>
-              )}
-            </View>
-            <View
-              style={[
-                styles.reviewContainer,
-                {
-                  backgroundColor: isDark ? "#151719" : "#F8F9FA",
-                  borderColor: themeStyles.border,
-                },
-              ]}
-            >
-              <Text
-                style={[styles.reviewText, { color: themeStyles.textColor }]}
-              >
-                {publicData.review || "Sem opinião escrita para esta mídia."}
-              </Text>
-            </View>
-          </View>
 
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.editIcon,
+                    pressed && styles.pressed,
+                  ]}
+                  onPress={handleDeleteRating}
+                >
+                  <MaterialIcons
+                    name="delete-outline"
+                    size={18}
+                    color="#EF4444"
+                  />
+                </Pressable>
+              </View>
+            )}
+          </View>
           {/* If Owner: Privacy Info block */}
           {isOwner && (
             <View style={styles.sectionContainer}>
@@ -866,5 +913,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: "center",
     lineHeight: 20,
+  },
+  actionButtons: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
 });

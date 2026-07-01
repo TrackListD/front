@@ -1,4 +1,5 @@
 // Tela: Comentários de uma Avaliação — lista e gerencia comentários de uma publicação específica via GET /comments/post/{postId}
+import { BackButton } from "@/components/BackButton";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import EditCommentModal from "@/src/components/EditCommentModal";
 import apiClient, { NormalizedError } from "@/src/service/api";
@@ -466,6 +467,15 @@ export default function PostCommentsScreen() {
           headerStyle: { backgroundColor: themeStyles.cardBackground },
           headerTintColor: themeStyles.textColor,
           headerShadowVisible: false,
+        }}
+      />
+
+      <BackButton
+        color={themeStyles.textColor}
+        fallbackHref="/feed/global"
+        style={{
+          marginTop: 12,
+          marginLeft: 16,
         }}
       />
 

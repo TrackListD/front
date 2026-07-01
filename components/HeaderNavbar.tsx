@@ -11,35 +11,45 @@ import {
   View,
 } from "react-native";
 import { auth } from "../src/service/firebase";
+import { getMyProfile } from "../src/service/userApi";
 
 const logoImg = require("../assets/images/logo.png");
+
+const genericProfilePic =
+  "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png";
 
 export default function HeaderNavbar() {
   const router = useRouter();
 
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userPhoto, setUserPhoto] = useState<string | null>(null);
   const [menuVisible, setMenuVisible] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
-      if (user) {
-        // 1. Pega a foto do Firebase
-        if (user.photoURL && user.photoURL.trim() !== "") {
-          setUserPhoto(user.photoURL);
-        } else {
-          setUserPhoto(null);
-        }
+      // 1. Se não tiver usuário logado (Implementação do outro dev + nossa)
+      if (!user) {
+        setIsLoggedIn(false);
+        setUserPhoto(null);
+        setIsAdmin(false);
+        return; // Para a execução por aqui
+      }
 
-        // 2. Descobre se ele é ADMIN no banco do Java
-        try {
-          const profile = await getMyProfile();
-          setIsAdmin(profile.role === "ADMIN");
-        } catch (error) {
-          console.error("Erro ao buscar perfil para validar Admin:", error);
-          setIsAdmin(false);
-        }
-      } else {
+      // 2. Se tiver usuário logado
+      setIsLoggedIn(true);
+      try {
+        // Faz a chamada na API UMA única vez
+        const profile = await getMyProfile();
+
+        // Código do outro dev: pega a foto vinda do backend
+        setUserPhoto(profile.profilePic || null);
+
+        // O NOSSO código: valida a role do perfil
+        setIsAdmin(profile.role === "ADMIN");
+
+      } catch (err) {
+        console.error("Erro ao buscar perfil no Header:", err);
         setUserPhoto(null);
         setIsAdmin(false);
       }
@@ -47,9 +57,6 @@ export default function HeaderNavbar() {
 
     return unsubscribe;
   }, []);
-
-  const defaultAvatar =
-    "https://vivaacidadenews.com.br/wp-content/uploads/2026/01/SAMUEL-12-media-scaled-e1769187444520-1200x650.jpg";
 
   const handleLogout = async () => {
     try {
@@ -65,18 +72,29 @@ export default function HeaderNavbar() {
     <>
       <View style={styles.navbarContainer}>
         {/* Perfil */}
-        <TouchableOpacity
-          style={styles.profileButton}
-          activeOpacity={0.7}
-          onPress={() => setMenuVisible(true)}
-        >
-          <Image
-            source={{ uri: userPhoto ?? defaultAvatar }}
-            style={styles.avatar}
-            resizeMode="cover"
-          />
-          <View style={styles.dotIndicator} />
-        </TouchableOpacity>
+        {isLoggedIn ? (
+          <TouchableOpacity
+            style={styles.profileButton}
+            activeOpacity={0.7}
+            onPress={() => setMenuVisible(true)}
+          >
+            <Image
+              source={{ uri: userPhoto ?? genericProfilePic }}
+              style={styles.avatar}
+              resizeMode="cover"
+            />
+            <View style={styles.dotIndicator} />
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={styles.loginButton}
+            activeOpacity={0.7}
+            onPress={() => router.push("/login" as Href)}
+          >
+            <Ionicons name="log-in-outline" size={16} color="#1DB954" />
+            <Text style={styles.loginButtonText}>Fazer login</Text>
+          </TouchableOpacity>
+        )}
 
         {/* Logo */}
         <View style={styles.logoContainer}>
@@ -221,6 +239,24 @@ const styles = StyleSheet.create({
     backgroundColor: "#1DB954",
     borderWidth: 1.5,
     borderColor: "#12161A",
+  },
+
+  loginButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#1A1F24",
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#2C353F",
+  },
+
+  loginButtonText: {
+    color: "#1DB954",
+    fontSize: 12,
+    fontWeight: "700",
+    marginLeft: 4,
   },
 
   logoContainer: {

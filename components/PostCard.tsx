@@ -324,10 +324,6 @@ export default function PostCard({
           <Text style={styles.actionText}>{item.commentsCount}</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.actionButton}>
-          <Ionicons name="share-social-outline" size={19} color="#8A8A8F" />
-        </TouchableOpacity>
-
         <TouchableOpacity
           style={[styles.actionButton, { marginLeft: "auto", marginRight: 0 }]}
           onPress={() => onReport(item.id, item.author.id, item.type)}

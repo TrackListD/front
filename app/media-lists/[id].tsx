@@ -1,4 +1,5 @@
 // Tela: Detalhe da Lista de Mídias — exibe a lista condicionalmente (Visão do Dono vs Visão Pública) via GET /mediaList/{id}
+import { BackButton } from "@/components/BackButton";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import AddMediaModal from "@/src/components/AddMediaModal";
 import EditMediaListNameModal from "@/src/components/EditMediaListNameModal";
@@ -159,7 +160,7 @@ export default function MediaListDetailScreen() {
     setLoading(true);
     try {
       await apiClient.delete(`/mediaList/${id}`);
-      router.replace("/media-lists/user/me" as Href);
+      router.replace("/profile/me" as Href);
     } catch (err) {
       const normalized = err as NormalizedError;
       Alert.alert(
@@ -291,6 +292,12 @@ export default function MediaListDetailScreen() {
           headerTintColor: themeStyles.textColor,
           headerShadowVisible: false,
         }}
+      />
+
+      <BackButton
+        color={themeStyles.textColor}
+        fallbackHref="/feed/global"
+        style={{ marginTop: 12, marginLeft: 16 }}
       />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>

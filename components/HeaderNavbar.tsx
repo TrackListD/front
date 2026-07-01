@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Href, useRouter } from "expo-router";
+import { getMyProfile } from "../src/service/userApi";
 import React, { useEffect, useState } from "react";
 import {
   Image,
@@ -18,13 +19,29 @@ export default function HeaderNavbar() {
 
   const [userPhoto, setUserPhoto] = useState<string | null>(null);
   const [menuVisible, setMenuVisible] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      if (user && user.photoURL && user.photoURL.trim() !== "") {
-        setUserPhoto(user.photoURL);
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        // 1. Pega a foto do Firebase
+        if (user.photoURL && user.photoURL.trim() !== "") {
+          setUserPhoto(user.photoURL);
+        } else {
+          setUserPhoto(null);
+        }
+
+        // 2. Descobre se ele é ADMIN no banco do Java
+        try {
+          const profile = await getMyProfile();
+          setIsAdmin(profile.role === "ADMIN");
+        } catch (error) {
+          console.error("Erro ao buscar perfil para validar Admin:", error);
+          setIsAdmin(false);
+        }
       } else {
         setUserPhoto(null);
+        setIsAdmin(false);
       }
     });
 
@@ -138,6 +155,22 @@ export default function HeaderNavbar() {
               <Ionicons name="help-circle-outline" size={20} color="#FFFFFF" />
               <Text style={styles.menuText}>FAQ / Ajuda</Text>
             </TouchableOpacity>
+
+            {isAdmin && (
+              <>
+                <View style={styles.separator} />
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => {
+                    setMenuVisible(false);
+                    router.push("/admin/reports/pending" as Href);
+                  }}
+                >
+                  <Ionicons name="shield-checkmark-outline" size={20} color="#1DB954" />
+                  <Text style={styles.menuText}>Painel Admin</Text>
+                </TouchableOpacity>
+              </>
+            )}
 
             <View style={styles.separator} />
 

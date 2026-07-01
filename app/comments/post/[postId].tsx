@@ -7,7 +7,7 @@ import { CommentResponseDto } from "@/src/types/comment";
 import { UserPerfilResponseDTO } from "@/src/types/user";
 import { formatDateBR } from "@/src/utils/dateUtils";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { Stack, useLocalSearchParams } from "expo-router";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -26,6 +26,7 @@ import {
 
 export default function PostCommentsScreen() {
   const { postId } = useLocalSearchParams<{ postId: string }>();
+  const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
 
@@ -310,6 +311,27 @@ export default function PostCommentsScreen() {
                 onPress={() => handleDeleteComment(item.id)}
               >
                 <MaterialIcons name="delete" size={18} color="#EF4444" />
+              </Pressable>
+            </View>
+          )}
+
+          {!isOwner && (
+            <View style={styles.actionsContainer}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.actionButton,
+                  pressed && styles.pressed,
+                ]}
+                onPress={() => {
+                  router.push({
+                    pathname: "/reportModal",
+                    params: {
+                      commentId: item.id,
+                    },
+                  });
+                }}
+              >
+                <MaterialIcons name="flag" size={20} color={themeStyles.subText} />
               </Pressable>
             </View>
           )}

@@ -222,14 +222,40 @@ export function ProfileView({
                 <Text style={styles.followText}>Editar Perfil</Text>
               </TouchableOpacity>
             ) : (
-              <TouchableOpacity
-                style={following ? styles.followingButton : styles.followButton}
-                onPress={onFollowPress}
-              >
-                <Text style={styles.followText}>
-                  {following ? "Seguindo" : "Seguir"}
-                </Text>
-              </TouchableOpacity>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <TouchableOpacity
+                  style={following ? styles.followingButton : styles.followButton}
+                  onPress={onFollowPress}
+                >
+                  <Text style={styles.followText}>
+                    {following ? "Seguindo" : "Seguir"}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={{
+                    marginLeft: 12,
+                    backgroundColor: COLORS.bgSubtle,
+                    width: 36,
+                    height: 36,
+                    borderRadius: 18,
+                    justifyContent: "center",
+                    alignItems: "center",
+                    borderWidth: 1,
+                    borderColor: "#2C353F",
+                  }}
+                  onPress={() => {
+                    router.push({
+                      pathname: "/reportModal",
+                      params: {
+                        userTargetId: user.id,
+                      },
+                    });
+                  }}
+                >
+                  <Ionicons name="flag-outline" size={18} color={COLORS.textSubtle} />
+                </TouchableOpacity>
+              </View>
             )}
 
             {user.bio && <Text style={styles.bio}>{user.bio}</Text>}

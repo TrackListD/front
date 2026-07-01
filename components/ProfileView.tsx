@@ -131,6 +131,27 @@ export function ProfileView({
     [router],
   );
 
+  const handleReport = useCallback(
+    (postId: number, authorId: number, postType: string) => {
+      const params: any = {};
+      if (postType === "RATING") {
+        params.ratingId = postId;
+      } else if (postType === "COMMENT") {
+        params.commentId = postId;
+      } else if (postType === "MEDIA_LIST") {
+        params.mediaListId = postId;
+      } else {
+        params.userTargetId = authorId;
+      }
+
+      router.push({
+        pathname: "/reportModal",
+        params,
+      });
+    },
+    [router],
+  );
+
   const handleFollowAuthor = useCallback(
     async (authorId: number) => {
       if (!auth.currentUser) {
@@ -187,7 +208,7 @@ export function ProfileView({
           currentUserId={isMe ? user.id : undefined}
           onToggleLike={handleToggleLike}
           onFollow={handleFollowAuthor}
-          onReport={() => {}}
+          onReport={handleReport}
         />
       )}
       ListHeaderComponent={
@@ -224,7 +245,9 @@ export function ProfileView({
             ) : (
               <View style={{ flexDirection: "row", alignItems: "center" }}>
                 <TouchableOpacity
-                  style={following ? styles.followingButton : styles.followButton}
+                  style={
+                    following ? styles.followingButton : styles.followButton
+                  }
                   onPress={onFollowPress}
                 >
                   <Text style={styles.followText}>
@@ -253,7 +276,11 @@ export function ProfileView({
                     });
                   }}
                 >
-                  <Ionicons name="flag-outline" size={18} color={COLORS.textSubtle} />
+                  <Ionicons
+                    name="flag-outline"
+                    size={18}
+                    color={COLORS.textSubtle}
+                  />
                 </TouchableOpacity>
               </View>
             )}

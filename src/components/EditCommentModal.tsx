@@ -17,7 +17,6 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  TouchableWithoutFeedback,
   View,
 } from "react-native";
 
@@ -105,115 +104,115 @@ export default function EditCommentModal({
       animationType="fade"
       onRequestClose={onClose}
     >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View
-          style={[styles.backdrop, { backgroundColor: themeStyles.backdrop }]}
+      {/* Backdrop: toque nele dispara Keyboard.dismiss. Pressable + stopPropagation
+          no card evita que o toque propague pro backdrop (mais confiável que
+          TouchableWithoutFeedback aninhado, especialmente no web) */}
+      <Pressable
+        style={[styles.backdrop, { backgroundColor: themeStyles.backdrop }]}
+        onPress={Keyboard.dismiss}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.keyboardView}
         >
-          <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
-            style={styles.keyboardView}
+          <Pressable
+            onPress={(e) => e.stopPropagation()}
+            style={[
+              styles.modalCard,
+              { backgroundColor: themeStyles.modalBackground },
+            ]}
           >
-            <View
-              style={[
-                styles.modalCard,
-                { backgroundColor: themeStyles.modalBackground },
-              ]}
-            >
-              {/* Cabeçalho */}
-              <View style={styles.header}>
-                <Text style={[styles.title, { color: themeStyles.textColor }]}>
-                  Editar Comentário
-                </Text>
-                <Pressable
-                  onPress={onClose}
-                  disabled={loading}
-                  style={styles.closeButton}
-                >
-                  <MaterialIcons
-                    name="close"
-                    size={24}
-                    color={themeStyles.textColor}
-                  />
-                </Pressable>
-              </View>
-
-              {/* Alerta de erro */}
-              {error && (
-                <View
-                  style={[
-                    styles.errorContainer,
-                    { backgroundColor: themeStyles.errorBg },
-                  ]}
-                >
-                  <Text
-                    style={[styles.errorText, { color: themeStyles.errorText }]}
-                  >
-                    {error}
-                  </Text>
-                </View>
-              )}
-
-              {/* Campo de entrada de texto */}
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: themeStyles.inputBg,
-                    color: themeStyles.textColor,
-                    borderColor: themeStyles.border,
-                  },
-                ]}
-                multiline={true}
-                numberOfLines={6}
-                value={text}
-                onChangeText={setText}
-                placeholder="Escreva seu comentário..."
-                placeholderTextColor={themeStyles.subText}
-                textAlignVertical="top"
-                editable={!loading}
-              />
-
-              {/* Ações do Rodapé */}
-              <View style={styles.footer}>
-                <Pressable
-                  style={[
-                    styles.button,
-                    styles.buttonCancel,
-                    { backgroundColor: themeStyles.buttonCancelBg },
-                  ]}
-                  onPress={onClose}
-                  disabled={loading}
-                >
-                  <Text
-                    style={[
-                      styles.buttonText,
-                      { color: themeStyles.textColor },
-                    ]}
-                  >
-                    Cancelar
-                  </Text>
-                </Pressable>
-
-                <Pressable
-                  style={[
-                    styles.button,
-                    styles.buttonSave,
-                    { backgroundColor: themeStyles.tintColor },
-                  ]}
-                  onPress={handleSave}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" />
-                  ) : (
-                    <Text style={styles.buttonSaveText}>Salvar</Text>
-                  )}
-                </Pressable>
-              </View>
+            {/* Cabeçalho */}
+            <View style={styles.header}>
+              <Text style={[styles.title, { color: themeStyles.textColor }]}>
+                Editar Comentário
+              </Text>
+              <Pressable
+                onPress={onClose}
+                disabled={loading}
+                style={styles.closeButton}
+              >
+                <MaterialIcons
+                  name="close"
+                  size={24}
+                  color={themeStyles.textColor}
+                />
+              </Pressable>
             </View>
-          </KeyboardAvoidingView>
-        </View>
-      </TouchableWithoutFeedback>
+
+            {/* Alerta de erro */}
+            {error && (
+              <View
+                style={[
+                  styles.errorContainer,
+                  { backgroundColor: themeStyles.errorBg },
+                ]}
+              >
+                <Text
+                  style={[styles.errorText, { color: themeStyles.errorText }]}
+                >
+                  {error}
+                </Text>
+              </View>
+            )}
+
+            {/* Campo de entrada de texto */}
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  backgroundColor: themeStyles.inputBg,
+                  color: themeStyles.textColor,
+                  borderColor: themeStyles.border,
+                },
+              ]}
+              multiline={true}
+              numberOfLines={6}
+              value={text}
+              onChangeText={setText}
+              placeholder="Escreva seu comentário..."
+              placeholderTextColor={themeStyles.subText}
+              textAlignVertical="top"
+              editable={!loading}
+            />
+
+            {/* Ações do Rodapé */}
+            <View style={styles.footer}>
+              <Pressable
+                style={[
+                  styles.button,
+                  styles.buttonCancel,
+                  { backgroundColor: themeStyles.buttonCancelBg },
+                ]}
+                onPress={onClose}
+                disabled={loading}
+              >
+                <Text
+                  style={[styles.buttonText, { color: themeStyles.textColor }]}
+                >
+                  Cancelar
+                </Text>
+              </Pressable>
+
+              <Pressable
+                style={[
+                  styles.button,
+                  styles.buttonSave,
+                  { backgroundColor: themeStyles.tintColor },
+                ]}
+                onPress={handleSave}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.buttonSaveText}>Salvar</Text>
+                )}
+              </Pressable>
+            </View>
+          </Pressable>
+        </KeyboardAvoidingView>
+      </Pressable>
     </Modal>
   );
 }
